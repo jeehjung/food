@@ -132,6 +132,21 @@ function formatAmount(n){
 function foodAmountLabel(target,base=2){
  return (Number(target)||Number(base)||2)+'인분';
 }
+function scaleCookingQuantities(text,factor){
+ const units=['큰스푼','작은스푼','종이컵','큰술','작은술','스푼','티스푼','테이블스푼','kg','mg','ml','g','L','컵','개','쪽','장','줄기','송이','마리','줌','꼬집','봉지','봉','팩','캔','근','토막','조각','알','방울','포기','대','뿌리','공기','장'];
+ const unitPattern=units.sort((a,b)=>b.length-a.length).map(unit=>unit.replace(/[.*+?^${}()|[\]\\]/g,'\\function scaleIngredientText(text,baseServings,targetServings){')).join('|');
+ const quantityPattern=new RegExp('(\\d+(?:\\.\\d+)?(?:\\s*\\/\\s*\\d+(?:\\.\\d+)?)?)(\\s*~\\s*\\d+(?:\\.\\d+)?(?:\\s*\\/\\s*\\d+(?:\\.\\d+)?)?)?(\\s*)('+unitPattern+')','gi');
+ const parseQuantity=value=>{const parts=value.trim().split('/');return parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(value)};
+ return String(text||'').replace(quantityPattern,(whole,first,range,space,unit)=>{
+  const scaledFirst=parseQuantity(first)*factor;
+  let scaledRange='';
+  if(range){
+   const endpoint=range.match(/~\\s*(.+)$/);
+   if(endpoint){const scaledEnd=parseQuantity(endpoint[1])*factor;scaledRange=range.replace(/(~\\s*)(.+)$/,(m,prefix,value)=>prefix+formatAmount(scaledEnd))}
+  }
+  return formatAmount(scaledFirst)+scaledRange+space+unit;
+ });
+}
 function scaleIngredientText(text,baseServings,targetServings){
  const base=Number(baseServings)||2,target=Number(targetServings)||base;
  const factor=target/base;
@@ -153,8 +168,8 @@ function scaleIngredientText(text,baseServings,targetServings){
    ingredientLines.push(scaled.replace(/^\s*[-•*]\s*/,'').trim());
   }else if(inCooking){
    const match=line.trim().match(/^(\d+)[.)、]\s*(.*)$/);
-   if(match)steps.push({number:match[1],text:match[2]});
-   else if(steps.length)steps[steps.length-1].text+=' '+line.trim();
+   if(match)steps.push({number:match[1],text:scaleCookingQuantities(match[2],factor)});
+   else if(steps.length)steps[steps.length-1].text+=' '+scaleCookingQuantities(line.trim(),factor);
   }
  });
  const ingredientsHtml='<table class="recipe-ingredients" aria-label="필요한 재료"><tbody>'+ingredientLines.map((line,index)=>{const match=line.match(/^(.+?)\s*[:：]\s*(.*)$/);return '<tr><td class="ingredient-number">'+(index+1)+'</td><td class="ingredient-name">'+esc(match?match[1].replace(/^[-•*]\s*/,'').trim():line)+'</td><td class="ingredient-amount">'+esc(match?match[2]:'')+'</td></tr>'}).join('')+'</tbody></table>';
