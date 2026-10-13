@@ -88,7 +88,7 @@ function getDisplayedServings(){return Number($('resultServings').dataset.value|
 function setDisplayedServings(value){
  const target=Math.max(1,Math.min(20,Math.round(Number(value)||2)));
  $('resultServings').dataset.value=String(target);
- $('resultServings').textContent=target===1?'1인분 양':target+'인분 양';
+ $('resultServings').textContent=foodAmountLabel(target,2);
  $('servingsDown').disabled=target<=1;
  $('servingsUp').disabled=target>=20;
  updateDisplayedServings(target);
@@ -108,30 +108,51 @@ function formatAmount(n){
  let s=(Math.round((n+Number.EPSILON)*100)/100).toFixed(2);
  return s.replace(/\.?0+$/,'');
 }
+function foodAmountLabel(target,base=2){
+ const ratio=(Number(target)||base)/(Number(base)||2);
+ return Math.abs(ratio-1)<0.001?'기본 양':'음식 양 ×'+formatAmount(ratio);
+}
 function scaleIngredientText(text,baseServings,targetServings){
  const base=Number(baseServings)||2,target=Number(targetServings)||base;
  const factor=target/base;
  const lines=String(text||'').split(/\r?\n/);
- let inIngredients=false,foundIngredients=false;
+ let inIngredients=false;
  const qtyPattern=/\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g;
- return lines.map(line=>{
-  if(/필요한\s*재료|재료\s*\(\s*\d+\s*인분\s*\)/.test(line)){
-   inIngredients=true;foundIngredients=true;
-   return line.replace(/필요한\s*재료(?:\s*\([^)]*\))?|재료\s*\(\s*\d+\s*인분\s*\)/,'필요한 재료 ('+target+'인분)');
+ const out=[];
+ lines.forEach(line=>{
+  if(/필요한\s*재료|🥕/.test(line)&&/재료/.test(line)){
+   inIngredients=true;
+   out.push('🥕 필요한 재료 ('+foodAmountLabel(target,base)+')');
+   return;
   }
-  if(/조리\s*순서|만드는\s*법|조리\s*방법/.test(line)){inIngredients=false;return line}
-  if(!inIngredients||!line.trim())return line;
-  return line.replace(qtyPattern,raw=>{
-   const parts=raw.split('/');
-   const value=parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(raw);
-   return Number.isFinite(value)?formatAmount(value*factor):raw;
-  });
- }).join('\n');
+  if(/조리\s*순서|만드는\s*법|조리\s*방법/.test(line)){
+   inIngredients=false;
+   if(out.length&&out[out.length-1]!=='')out.push('');
+   out.push('👩‍🍳 조리 순서');
+   return;
+  }
+  if(!line.trim()){if(out.length&&out[out.length-1]!=='')out.push('');return}
+  if(inIngredients){
+   const scaled=line.replace(qtyPattern,raw=>{
+    const parts=raw.split('/');
+    const value=parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(raw);
+    return Number.isFinite(value)?formatAmount(value*factor):raw;
+   });
+   out.push('　'+scaled.replace(/^\s+/,''));
+  }else if(/^\s*\d+[.)、]\s*/.test(line)){
+   out.push('　　'+line.trim());
+   out.push('');
+  }else{
+   out.push(line);
+  }
+ });
+ while(out.length&&out[out.length-1]==='')out.pop();
+ return out.join('\n');
 }
 function updateDisplayedServings(target){
  if(!currentBaseText)return;
  $('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,target);
- $('resultSub').textContent=selectedStyle()+' · 음식 양 '+target+'인분 기준 · '+(activeHistoryId?'저장된 레시피':'웹 검색 기반')+' · 재료 양은 계산으로 조정';
+ $('resultSub').textContent=selectedStyle()+' · '+foodAmountLabel(target,2)+' · '+(activeHistoryId?'저장된 레시피':'웹 검색 기반')+' · 재료 양은 계산으로 조정';
  if(activeHistoryId){const items=readHistory(),item=items.find(x=>String(x.id)===String(activeHistoryId));if(item){item.servings=target;writeHistory(items)}}
 }
 function renderHistory(){
@@ -162,7 +183,7 @@ $('historyList').addEventListener('click',e=>{
 function showSavedRecipe(item){
  $('food').value=item.food||item.name||'';setSelectedStyle(item.option||'가장 인기 많은');
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
- $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+'음식 양 '+(item.servings||currentBaseServings||2)+'인분 기준 · 저장된 레시피';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
+ $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+foodAmountLabel(Number(item.servings||currentBaseServings||2),2)+' · 저장된 레시피';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
  (item.sources||[]).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
  if(!list.children.length){const p=document.createElement('p');p.className='empty';p.textContent='저장된 참고 출처가 없습니다.';list.appendChild(p)}
@@ -172,12 +193,12 @@ form.addEventListener('submit',async e=>{
  e.preventDefault();const food=$('food').value.trim(),key=getStoredApiKey();if(!food)return;
  if(!key){openApiKeyModal();setStatus('먼저 Gemini API 키를 설정해 주세요.');return}
  const btn=$('searchBtn');btn.disabled=true;btn.textContent='검색 중…';result.classList.remove('show');setStatus('웹에서 레시피 정보를 확인하고 있어요. 잠시만 기다려 주세요.');
- const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${selectedStyle()}\n기준 음식 양: 2인분\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요. 각 조리 단계는 줄마다 번호를 붙이고 단계 사이에 빈 줄을 넣어 읽기 쉽게 작성하세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 2인분 기준으로 제시하세요.`;
+ const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${selectedStyle()}\n기준 양: 기본 양(2인분)\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '🥕 필요한 재료 (기본 양)'과 '👩‍🍳 조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요. 각 조리 단계 사이에는 빈 줄을 넣어 읽기 쉽게 작성하세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 기준 양(2인분)으로 제시하세요.`;
  try{
   const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],tools:[{google_search:{}}],generationConfig:{maxOutputTokens:5000}})});
   const data=await resp.json();if(!resp.ok)throw new Error(data?.error?.message||('API 요청 실패 ('+resp.status+')'));
   const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\n').trim();if(!answerText)throw new Error('응답에 레시피 텍스트가 없어요. API 키와 모델 사용 설정을 확인해 주세요.');
-  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 음식 양 2인분 기준 · 웹 검색 기반';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,2);
+  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 기본 양 · 웹 검색 기반';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const chunks=candidate?.groundingMetadata?.groundingChunks||[],sourceList=$('sourceList');sourceList.replaceChildren();const seen=new Set(),savedSources=[];
   chunks.forEach(c=>{const w=c.web;if(!w?.uri||seen.has(w.uri))return;seen.add(w.uri);savedSources.push({title:w.title||w.uri,url:w.uri});const a=document.createElement('a');a.className='source';a.href=w.uri;a.target='_blank';a.rel='noopener noreferrer';a.textContent=w.title||w.uri;const span=document.createElement('span');try{span.textContent=new URL(w.uri).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);sourceList.appendChild(a)});
   if(!sourceList.children.length){const p=document.createElement('p');p.className='empty';p.textContent='API 응답에 출처 링크가 포함되지 않았어요.';sourceList.appendChild(p)}
