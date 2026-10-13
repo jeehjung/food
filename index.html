@@ -238,9 +238,10 @@ form.addEventListener('submit',async e=>{
    const statData=await statResp.json();
    if(statResp.ok){const stats=new Map((statData.items||[]).map(v=>[v.id,Number(v.statistics?.viewCount||0)]));videos.forEach(v=>v.views=stats.get(v.id)||0);videos.sort((a,b)=>b.views-a.views)}
   }catch(e){}
-  setStatus('유튜브 영상 '+videos.length+'개를 찾았어요. Gemini가 레시피를 정리하고 있어요.');
-  const videoContext=videos.slice(0,8).map((v,i)=>(i+1)+'. 제목: '+v.title+'\n채널: '+v.channel+'\n게시일: '+(v.publishedAt?v.publishedAt.slice(0,10):'미상')+'\n조회수: '+v.views+'\n설명: '+v.description.slice(0,900)+'\nURL: '+v.url).join('\n\n');
-  const prompt=`당신은 한국어 레시피 에디터입니다. 아래는 사용자가 입력한 음식과 관련해 YouTube Data API에서 실제로 검색한 영상 정보입니다. 영상 제목과 설명에 있는 정보만 근거로 삼고, 설명에 없는 세부 조리법은 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요. 영상 정보가 서로 다르면 가장 관련성 높은 레시피를 종합하세요.
+  const topVideos=videos.slice(0,5);
+  setStatus('조회수 상위 '+topVideos.length+'개 영상을 기준으로 Gemini가 레시피를 정리하고 있어요.');
+  const videoContext=topVideos.map((v,i)=>(i+1)+'. 제목: '+v.title+'\n채널: '+v.channel+'\n게시일: '+(v.publishedAt?v.publishedAt.slice(0,10):'미상')+'\n조회수: '+v.views+'\n설명: '+v.description.slice(0,900)+'\nURL: '+v.url).join('\n\n');
+  const prompt=`당신은 한국어 레시피 에디터입니다. 아래는 사용자가 입력한 음식과 관련해 YouTube Data API에서 실제로 검색한 영상 중 조회수 상위 최대 5개입니다. 영상 제목과 설명에 있는 정보만 근거로 삼고, 설명에 없는 세부 조리법은 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요. 영상 정보가 서로 다르면 가장 관련성 높은 레시피를 종합하세요.
 음식: ${food}
 옵션: ${selectedStyle()}
 기준 양: 2인분
