@@ -6,6 +6,34 @@
 <style>
 :root{--bg:#f6f4ef;--card:#fffefa;--ink:#24251f;--muted:#73756c;--line:#e5e2d8;--accent:#d85c36;--soft:#f3e2d8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;line-height:1.6}main{max-width:850px;margin:auto;padding:24px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:12px}.logo{font-weight:900;font-size:18px;letter-spacing:-.04em}.pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 10px;color:var(--muted)}.hero{padding:20px 0 24px}.eyebrow{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:.12em}.hero h1{font-size:clamp(32px,7vw,54px);line-height:1.12;letter-spacing:-.055em;margin:10px 0 14px}.hero p{color:var(--muted);max-width:600px}.panel,.result{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;margin:18px 0;box-shadow:0 8px 30px #30271908}label{display:block;font-size:14px;font-weight:750;margin:0 0 7px}.foodrow{display:flex;gap:8px}input,select{font:inherit;border:1px solid var(--line);border-radius:12px;background:white;padding:13px 12px;width:100%;min-width:0;color:var(--ink)}.foodrow input{flex:1}button{font:inherit;font-weight:750;border:0;border-radius:12px;padding:12px 16px;cursor:pointer}.primary{background:var(--accent);color:white;white-space:nowrap}.secondary{background:var(--soft);color:#77371f}.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}button:disabled{opacity:.6}.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.hint{font-size:12px;color:var(--muted);margin:8px 0 0}.api{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.api summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:700}.api input{margin-top:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.keytop{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 11px;color:var(--muted);cursor:pointer}.keytop.set{background:#edf8ed;border-color:#c9e7c9;color:#27632a}.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}.modalback{display:none;position:fixed;inset:0;background:#17203399;backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center;padding:16px}.modalback.show{display:flex}.keymodal{background:#fffefa;border:1px solid var(--line);border-radius:22px;padding:24px;width:100%;max-width:430px;box-shadow:0 20px 60px #0002}.keymodal h2{font-size:20px;margin:0 0 8px}.keymodal p{font-size:13px;color:var(--muted);margin:0 0 16px}.keymodal a{color:#5145cd;font-weight:700}.keymodal label{font-size:13px}.keymodal input{font-family:ui-monospace,monospace;-webkit-text-security:disc;margin-bottom:16px}.keymodal .actions button{flex:1}.actions button{font-size:13px}#status{display:none;padding:12px 14px;border-radius:12px;background:#f2eee4;color:#55564d;margin:14px 0;font-size:14px}#status.show{display:block}.result{display:none;padding:clamp(18px,4vw,30px)}.result.show{display:block}.result-serving{max-width:260px;margin:0 0 18px}.result-serving label{margin-bottom:6px}.result h2{font-size:25px;line-height:1.25;letter-spacing:-.035em;margin:0 0 8px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.answer{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.85}.sources{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}.sources h3{font-size:15px;margin:0 0 10px}.source-list{display:grid;gap:8px}.source{display:block;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:13px}.source span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.empty{color:var(--muted);font-size:13px}footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}@media(max-width:520px){main{padding:18px 13px 38px}.top-actions{justify-content:flex-start}.panel{padding:16px}.foodrow{flex-direction:column}.foodrow button{width:100%}.options{grid-template-columns:1fr}.hero{padding-top:12px}.result{padding:18px}}
+
+/* History UI styled to match the spell repository's saved-deck modal */
+.history-modal-panel{background:#fff;border-radius:24px;padding:16px 20px 18px;max-width:448px;width:100%;border:1px solid #f1f5f9;box-shadow:0 18px 55px #0f172a24;position:relative;max-height:85vh;display:flex;flex-direction:column}
+.history-modal-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-shrink:0}
+.history-modal-icon{width:32px;height:32px;background:#fff7ed;color:#d97706;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800}
+.history-modal-head h2{font-size:16px;font-weight:900;color:#0f172a;margin:0;flex:1}
+.history-close{width:28px;height:28px;padding:0;border-radius:50%;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:18px}
+.history-list{flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.history-empty{text-align:center;padding:32px 12px;color:#94a3b8;font-size:12px}
+.history-empty-icon{font-size:30px;color:#cbd5e1;margin-bottom:8px}
+.history-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .15s,border-color .15s}
+.history-card.favorite{border-color:#fcd34d;background:#fffbeb80}
+.history-card-main{flex:1;min-width:0;margin-right:2px;cursor:pointer}
+.history-card-title-row{display:flex;align-items:center;gap:6px;min-width:0}
+.history-star{background:transparent;border:0;padding:2px;font-size:16px;color:#cbd5e1;line-height:1;flex-shrink:0}
+.history-star.active{color:#fbbf24}
+.history-card-title{font-size:14px;font-weight:800;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-count-badge{font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px;font-weight:800;white-space:nowrap}
+.history-card-detail{font-size:11px;color:#64748b;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.history-card-date{font-size:10px;color:#94a3b8;margin-top:2px}
+.history-card-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.history-icon-btn{width:28px;height:28px;padding:0;background:#e2e8f0;color:#64748b;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.history-icon-btn.rename:hover{background:#e0e7ff;color:#4f46e5}
+.history-icon-btn.delete:hover{background:#ffe4e6;color:#e11d48}
+.history-load-btn{background:#4f46e5;color:white;font-size:11px;font-weight:800;padding:7px 10px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 4px #0f172a12}
+.history-modal-footer{margin-top:16px;padding-top:12px;border-top:1px solid #f1f5f9;flex-shrink:0}
+.history-modal-footer button{width:100%;background:#f1f5f9;color:#334155;font-weight:800;padding:10px;border-radius:12px;font-size:12px}
+@media(max-width:420px){.history-modal-panel{padding:14px 12px}.history-card{padding:10px;gap:5px}.history-card-actions{gap:3px}.history-load-btn{padding:7px 8px}.history-card-detail{max-width:210px}}
 </style></head>
 <body><main>
 <div class="top"><div class="top-actions"><button type="button" class="keytop" id="apiKeyOpen">🔑 <span id="apiKeyBtnText">API Key 설정</span></button><button type="button" class="keytop" id="historyOpen">📚 레시피 이력</button><div class="pill">TREND RECIPE FINDER</div></div></div>
@@ -15,7 +43,7 @@
 <p class="hint">검색 결과를 바탕으로 정리하며, 인기도를 확인할 수 없는 경우 유행 중이라고 단정하지 않아요.</p>
 </form>
 </section>
-<div class="modalback" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="keymodal" style="max-height:85vh;display:flex;flex-direction:column"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px"><h2 id="historyModalTitle">📚 저장된 레시피 보관함</h2><button type="button" class="ghost" id="historyClose" aria-label="닫기">✕</button></div><p class="hint" id="historyCount">0/100 저장됨</p><div class="actions" style="margin-top:8px"><button type="button" class="ghost" id="historyAll">전체 이력</button><button type="button" class="ghost" id="historyFavorites">★ 즐겨찾기</button></div><div id="historyList" style="display:grid;gap:8px;margin-top:12px;overflow-y:auto;min-height:0"></div><p class="hint">최대 100개까지 이 브라우저에 저장됩니다. 항목을 누르면 레시피를 불러옵니다.</p></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label for="resultServings">몇 인분으로 조정할까요?</label><select id="resultServings"><option value="1">1인분</option><option value="2" selected>2인분</option><option value="3">3인분</option><option value="4">4인분</option><option value="5">5인분</option><option value="6">6인분</option><option value="8">8인분</option></select><p class="hint">검색은 2인분 기준으로 한 번만 진행하고, 여기서 재료 양을 계산해 바꿔요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🔎 참고한 웹 출처</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
+<div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label for="resultServings">몇 인분으로 조정할까요?</label><select id="resultServings"><option value="1">1인분</option><option value="2" selected>2인분</option><option value="3">3인분</option><option value="4">4인분</option><option value="5">5인분</option><option value="6">6인분</option><option value="8">8인분</option></select><p class="hint">검색은 2인분 기준으로 한 번만 진행하고, 여기서 재료 양을 계산해 바꿔요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🔎 참고한 웹 출처</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
 <div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">🔑 Google Gemini API Key 설정</h2><p>Gemini AI 레시피 검색을 사용하려면 API 키가 필요합니다.<br><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">여기서 무료 API Key 발급받기 ↗</a></p><label for="apiKeyInput">Gemini API Key</label><input id="apiKeyInput" type="text" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="-webkit-text-security:disc" data-lpignore="true" data-1p-ignore="true"><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">저장한 키는 이 브라우저의 localStorage에 보관되어 새로고침 후에도 유지됩니다. 같은 브라우저라도 사이트 주소(도메인)가 다르면 별도로 저장됩니다.</p></div></div><footer>사용 모델: Gemini 3.8 Flash · 검색 결과는 공개 웹페이지 기반이며, 일부 SNS 게시물은 검색되지 않을 수 있어요.<br>조리 전에는 원문과 식품 안전 정보를 확인해 주세요.</footer>
 </main>
 <script>
@@ -39,9 +67,9 @@ $('apiKeySave').addEventListener('click',saveApiKey);
 $('apiKeyModal').addEventListener('click',e=>{if(e.target===$('apiKeyModal'))closeApiKeyModal()});
 $('historyOpen').addEventListener('click',openHistoryModal);
 $('historyClose').addEventListener('click',closeHistoryModal);
+$('historyFooterClose').addEventListener('click',closeHistoryModal);
 $('historyModal').addEventListener('click',e=>{if(e.target===$('historyModal'))closeHistoryModal()});
-$('historyAll').addEventListener('click',()=>{historyFilter='all';renderHistory()});
-$('historyFavorites').addEventListener('click',()=>{historyFilter='favorites';renderHistory()});
+
 $('againBtn').addEventListener('click',()=>form.requestSubmit());
 $('resultServings').addEventListener('change',()=>updateDisplayedServings(Number($('resultServings').value)));
 updateApiKeyUI();
@@ -52,17 +80,30 @@ function openHistoryModal(){historyFilter='all';renderHistory();$('historyModal'
 function closeHistoryModal(){$('historyModal').classList.remove('show')}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 
-function formatAmount(n){if(!Number.isFinite(n))return String(n);let s=String(Math.round(n*100)/100);if(s.includes('.'))s=s.replace(/0+$/,'').replace(/\\.$/,'');return s}
+function formatAmount(n){
+ if(!Number.isFinite(n))return String(n);
+ let s=(Math.round((n+Number.EPSILON)*100)/100).toFixed(2);
+ return s.replace(/\.?0+$/,'');
+}
 function scaleIngredientText(text,baseServings,targetServings){
- const factor=Number(targetServings)/Math.max(1,Number(baseServings)||2);
- const lines=String(text||'').split('\\n');let inIngredients=false;
- const qtyPattern=new RegExp('\\\\d+(?:\\\\.\\\\d+)?(?:\\\\/\\\\d+(?:\\\\.\\\\d+)?)?','g');
+ const base=Number(baseServings)||2,target=Number(targetServings)||base;
+ const factor=target/base;
+ const lines=String(text||'').split(/\r?\n/);
+ let inIngredients=false,foundIngredients=false;
+ const qtyPattern=/\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g;
  return lines.map(line=>{
-  if(/필요한\\s*재료/.test(line)){inIngredients=true;return line.replace(/필요한\\s*재료(?:\\s*\\([^)]*\\))?/,'필요한 재료 ('+targetServings+'인분)')}
-  if(/조리\\s*순서/.test(line)){inIngredients=false;return line}
+  if(/필요한\s*재료|재료\s*\(\s*\d+\s*인분\s*\)/.test(line)){
+   inIngredients=true;foundIngredients=true;
+   return line.replace(/필요한\s*재료(?:\s*\([^)]*\))?|재료\s*\(\s*\d+\s*인분\s*\)/,'필요한 재료 ('+target+'인분)');
+  }
+  if(/조리\s*순서|만드는\s*법|조리\s*방법/.test(line)){inIngredients=false;return line}
   if(!inIngredients||!line.trim())return line;
-  return line.replace(qtyPattern,raw=>{const parts=raw.split('/');const value=parts.length===2?Number(parts[0])/Number(parts[1]):Number(raw);return Number.isFinite(value)?formatAmount(value*factor):raw})
- }).join('\\n')
+  return line.replace(qtyPattern,raw=>{
+   const parts=raw.split('/');
+   const value=parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(raw);
+   return Number.isFinite(value)?formatAmount(value*factor):raw;
+  });
+ }).join('\n');
 }
 function updateDisplayedServings(target){
  if(!currentBaseText)return;
@@ -70,22 +111,26 @@ function updateDisplayedServings(target){
  $('resultSub').textContent=$('style').value+' · '+target+'인분 · '+(activeHistoryId?'저장된 레시피':'웹 검색 기반')+' · 재료 양은 계산으로 조정';
  if(activeHistoryId){const items=readHistory(),item=items.find(x=>String(x.id)===String(activeHistoryId));if(item){item.servings=target;writeHistory(items)}}
 }
-
 function renderHistory(){
- const all=readHistory();$('historyCount').textContent=all.length+'/100 저장됨';
+ const all=readHistory();
  const list=$('historyList');list.replaceChildren();
- const entries=all.filter(x=>historyFilter==='all'||x.favorite).sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
- $('historyAll').classList.toggle('secondary',historyFilter==='all');$('historyFavorites').classList.toggle('secondary',historyFilter==='favorites');
- if(!entries.length){const empty=document.createElement('p');empty.className='empty';empty.textContent=historyFilter==='favorites'?'즐겨찾기한 레시피가 없습니다.':'저장된 레시피가 없습니다. 레시피를 검색하면 자동으로 보관됩니다.';list.appendChild(empty);return}
+ const entries=all.sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+ if(!entries.length){
+  const empty=document.createElement('div');empty.className='history-empty';
+  empty.innerHTML='<div class="history-empty-icon">▱</div><p>저장된 레시피가 없습니다.<br>음식을 검색하면 자동으로 레시피가 보관됩니다.</p>';
+  list.appendChild(empty);return;
+ }
  entries.forEach(item=>{
-  const card=document.createElement('div');card.style.cssText='border:1px solid var(--line);border-radius:14px;padding:12px;background:'+(item.favorite?'#fff8e8':'#fff');
+  const card=document.createElement('div');card.className='history-card'+(item.favorite?' favorite':'');
   const date=item.createdAt?new Date(item.createdAt).toLocaleString('ko-KR',{dateStyle:'short',timeStyle:'short'}):'';
-  card.innerHTML='<div style="display:flex;align-items:flex-start;gap:8px"><button type="button" class="ghost" data-action="favorite" data-id="'+escapeHtml(item.id)+'" aria-label="즐겨찾기" style="padding:5px 8px;color:'+(item.favorite?'#d99a00':'#9b9b9b')+'">'+(item.favorite?'★':'☆')+'</button><button type="button" data-action="load" data-id="'+escapeHtml(item.id)+'" style="padding:0;background:transparent;text-align:left;flex:1;min-width:0"><strong style="display:block;overflow-wrap:anywhere">'+escapeHtml(item.name||item.food||'레시피')+'</strong><span class="hint">'+escapeHtml(item.option||'')+' · '+escapeHtml(date)+'</span></button></div><div class="actions" style="margin-top:8px"><button type="button" class="ghost" data-action="rename" data-id="'+escapeHtml(item.id)+'">이름 수정</button><button type="button" class="ghost" data-action="load" data-id="'+escapeHtml(item.id)+'">불러오기</button><button type="button" class="ghost" data-action="delete" data-id="'+escapeHtml(item.id)+'">삭제</button></div>';
-  list.appendChild(card)
+  const serving=Number(item.servings||item.baseServings||2);
+  const sourceCount=(item.sources||[]).length;
+  card.innerHTML='<div class="history-card-main" data-action="load" data-id="'+escapeHtml(item.id)+'"><div class="history-card-title-row"><button type="button" class="history-star '+(item.favorite?'active':'')+'" data-action="favorite" data-id="'+escapeHtml(item.id)+'" aria-label="즐겨찾기" title="즐겨찾기">★</button><span class="history-card-title">'+escapeHtml(item.name||item.food||'레시피')+'</span><span class="history-count-badge">'+serving+'인분</span></div><p class="history-card-detail">'+escapeHtml(item.option||'')+' · 참고 출처 '+sourceCount+'개</p><p class="history-card-date">'+escapeHtml(date)+'</p></div><div class="history-card-actions"><button type="button" class="history-icon-btn rename" data-action="rename" data-id="'+escapeHtml(item.id)+'" title="이름 수정" aria-label="이름 수정">✎</button><button type="button" class="history-load-btn" data-action="load" data-id="'+escapeHtml(item.id)+'">불러오기</button><button type="button" class="history-icon-btn delete" data-action="delete" data-id="'+escapeHtml(item.id)+'" title="삭제" aria-label="삭제">⌫</button></div>';
+  list.appendChild(card);
  });
 }
 $('historyList').addEventListener('click',e=>{
- const b=e.target.closest('button[data-action]');if(!b)return;
+ const b=e.target.closest('[data-action]');if(!b)return;
  const id=b.dataset.id,items=readHistory(),item=items.find(x=>String(x.id)===String(id));if(!item)return;
  if(b.dataset.action==='favorite'){item.favorite=!item.favorite;writeHistory(items);renderHistory()}
  else if(b.dataset.action==='rename'){const name=prompt('레시피 이름을 입력하세요:',item.name||item.food||'레시피');if(name&&name.trim()){item.name=name.trim();writeHistory(items);renderHistory()}}
