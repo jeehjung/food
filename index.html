@@ -34,7 +34,7 @@
 .history-modal-footer button{width:100%;background:#f1f5f9;color:#334155;font-weight:800;padding:10px;border-radius:12px;font-size:12px}
 @media(max-width:420px){.history-modal-panel{padding:14px 12px}.history-card{padding:10px;gap:5px}.history-card-actions{gap:3px}.history-load-btn{padding:7px 8px}.history-card-detail{max-width:210px}}
 
-.result-serving{max-width:300px;margin:0 0 18px}.serving-stepper{display:flex;align-items:center;gap:12px}.serving-step{width:44px;height:44px;padding:0;border-radius:14px;background:#f1f5f9;color:#334155;font-size:24px;display:flex;align-items:center;justify-content:center}.serving-step:hover:not(:disabled){background:#e0e7ff;color:#4338ca}.serving-step:disabled{opacity:.35;cursor:not-allowed}.serving-stepper output{min-width:76px;text-align:center;font-size:18px;font-weight:900;color:#1e293b}
+.result-serving{max-width:300px;margin:0 0 18px}.answer .recipe-ingredients{display:grid;gap:2px}.answer .recipe-ingredient{padding-left:1em;text-indent:-1em}.answer .cooking-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .cooking-table td{border:0;padding:5px 4px;vertical-align:top}.answer .cooking-table .step-number{width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:750}.answer .cooking-table .step-text{text-align:left;overflow-wrap:anywhere}.serving-stepper{display:flex;align-items:center;gap:12px}.serving-step{width:44px;height:44px;padding:0;border-radius:14px;background:#f1f5f9;color:#334155;font-size:24px;display:flex;align-items:center;justify-content:center}.serving-step:hover:not(:disabled){background:#e0e7ff;color:#4338ca}.serving-step:disabled{opacity:.35;cursor:not-allowed}.serving-stepper output{min-width:76px;text-align:center;font-size:18px;font-weight:900;color:#1e293b}
 
 .recipe-style-fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-wrap:wrap;gap:10px 18px}
 .recipe-style-fieldset legend{display:block;font-size:14px;font-weight:750;margin:0 0 9px;padding:0}
@@ -54,7 +54,7 @@
 <p class="hint">검색 결과를 바탕으로 정리하며, 인기도를 확인할 수 없는 경우 유행 중이라고 단정하지 않아요.</p>
 </form>
 </section>
-<div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>음식 양 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="음식 양 줄이기" title="음식 양 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="음식 양 늘리기" title="음식 양 늘리기">＋</button></div><p class="hint">버튼으로 음식 양을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🔎 참고한 웹 출처</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
+<div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🔎 참고한 웹 출처</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
 <div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">🔑 Google Gemini API Key 설정</h2><p>Gemini AI 레시피 검색을 사용하려면 API 키가 필요합니다.<br><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">여기서 무료 API Key 발급받기 ↗</a></p><label for="apiKeyInput">Gemini API Key</label><input id="apiKeyInput" type="text" placeholder="AIzaSy..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="-webkit-text-security:disc" data-lpignore="true" data-1p-ignore="true"><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">저장한 키는 이 브라우저의 localStorage에 보관되어 새로고침 후에도 유지됩니다. 같은 브라우저라도 사이트 주소(도메인)가 다르면 별도로 저장됩니다.</p></div></div><footer>사용 모델: Gemini 3.8 Flash · 검색 결과는 공개 웹페이지 기반이며, 일부 SNS 게시물은 검색되지 않을 수 있어요.<br>조리 전에는 원문과 식품 안전 정보를 확인해 주세요.</footer>
 </main>
 <script>
@@ -109,49 +109,40 @@ function formatAmount(n){
  return s.replace(/\.?0+$/,'');
 }
 function foodAmountLabel(target,base=2){
- const ratio=(Number(target)||base)/(Number(base)||2);
- return Math.abs(ratio-1)<0.001?'기본 양':'음식 양 ×'+formatAmount(ratio);
+ return (Number(target)||Number(base)||2)+'인분';
 }
 function scaleIngredientText(text,baseServings,targetServings){
  const base=Number(baseServings)||2,target=Number(targetServings)||base;
  const factor=target/base;
  const lines=String(text||'').split(/\r?\n/);
- let inIngredients=false;
+ let inIngredients=false,inCooking=false;
+ const ingredientLines=[],steps=[];
  const qtyPattern=/\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g;
- const out=[];
+ const esc=value=>escapeHtml(value);
  lines.forEach(line=>{
-  if(/필요한\s*재료|🥕/.test(line)&&/재료/.test(line)){
-   inIngredients=true;
-   out.push('🥕 필요한 재료 ('+foodAmountLabel(target,base)+')');
-   return;
-  }
-  if(/조리\s*순서|만드는\s*법|조리\s*방법/.test(line)){
-   inIngredients=false;
-   if(out.length&&out[out.length-1]!=='')out.push('');
-   out.push('👩‍🍳 조리 순서');
-   return;
-  }
-  if(!line.trim()){if(out.length&&out[out.length-1]!=='')out.push('');return}
+  if(/필요한\s*재료|🥕/.test(line)&&/재료/.test(line)){inIngredients=true;inCooking=false;return;}
+  if(/조리\s*순서|만드는\s*법|조리\s*방법/.test(line)){inIngredients=false;inCooking=true;return;}
+  if(!line.trim())return;
   if(inIngredients){
    const scaled=line.replace(qtyPattern,raw=>{
     const parts=raw.split('/');
     const value=parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(raw);
     return Number.isFinite(value)?formatAmount(value*factor):raw;
    });
-   out.push('　'+scaled.replace(/^\s+/,''));
-  }else if(/^\s*\d+[.)、]\s*/.test(line)){
-   out.push('　　'+line.trim());
-   out.push('');
-  }else{
-   out.push(line);
+   ingredientLines.push(scaled.replace(/^\s*[-•*]\s*/,'').trim());
+  }else if(inCooking){
+   const match=line.trim().match(/^(\d+)[.)、]\s*(.*)$/);
+   if(match)steps.push({number:match[1],text:match[2]});
+   else if(steps.length)steps[steps.length-1].text+=' '+line.trim();
   }
  });
- while(out.length&&out[out.length-1]==='')out.pop();
- return out.join('\n');
+ const ingredientsHtml=ingredientLines.map(line=>'<div class="recipe-ingredient">- '+esc(line)+'</div>').join('');
+ const tableHtml='<table class="cooking-table" aria-label="조리 순서"><tbody>'+steps.map(step=>'<tr><td class="step-number">'+esc(step.number)+'</td><td class="step-text">'+esc(step.text)+'</td></tr>').join('')+'</tbody></table>';
+ return '<div class="recipe-section-title">🥕 필요한 재료 ('+esc(foodAmountLabel(target,base))+')</div><div class="recipe-ingredients">'+ingredientsHtml+'</div><div class="recipe-section-title" style="margin-top:18px">👩‍🍳 조리 순서</div>'+tableHtml;
 }
 function updateDisplayedServings(target){
  if(!currentBaseText)return;
- $('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,target);
+ $('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,target);
  $('resultSub').textContent=selectedStyle()+' · '+foodAmountLabel(target,2)+' · '+(activeHistoryId?'저장된 레시피':'웹 검색 기반')+' · 재료 양은 계산으로 조정';
  if(activeHistoryId){const items=readHistory(),item=items.find(x=>String(x.id)===String(activeHistoryId));if(item){item.servings=target;writeHistory(items)}}
 }
@@ -183,7 +174,7 @@ $('historyList').addEventListener('click',e=>{
 function showSavedRecipe(item){
  $('food').value=item.food||item.name||'';setSelectedStyle(item.option||'가장 인기 많은');
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
- $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+foodAmountLabel(Number(item.servings||currentBaseServings||2),2)+' · 저장된 레시피';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
+ $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+foodAmountLabel(Number(item.servings||currentBaseServings||2),2)+' · 저장된 레시피';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
  (item.sources||[]).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
  if(!list.children.length){const p=document.createElement('p');p.className='empty';p.textContent='저장된 참고 출처가 없습니다.';list.appendChild(p)}
@@ -193,12 +184,12 @@ form.addEventListener('submit',async e=>{
  e.preventDefault();const food=$('food').value.trim(),key=getStoredApiKey();if(!food)return;
  if(!key){openApiKeyModal();setStatus('먼저 Gemini API 키를 설정해 주세요.');return}
  const btn=$('searchBtn');btn.disabled=true;btn.textContent='검색 중…';result.classList.remove('show');setStatus('웹에서 레시피 정보를 확인하고 있어요. 잠시만 기다려 주세요.');
- const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${selectedStyle()}\n기준 양: 기본 양(2인분)\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '🥕 필요한 재료 (기본 양)'과 '👩‍🍳 조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요. 각 조리 단계 사이에는 빈 줄을 넣어 읽기 쉽게 작성하세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 기준 양(2인분)으로 제시하세요.`;
+ const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${selectedStyle()}\n기준 양: 2인분\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요. 각 조리 단계 사이에는 빈 줄을 넣어 읽기 쉽게 작성하세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 기준 양(2인분)으로 제시하세요.`;
  try{
   const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],tools:[{google_search:{}}],generationConfig:{maxOutputTokens:5000}})});
   const data=await resp.json();if(!resp.ok)throw new Error(data?.error?.message||('API 요청 실패 ('+resp.status+')'));
   const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\n').trim();if(!answerText)throw new Error('응답에 레시피 텍스트가 없어요. API 키와 모델 사용 설정을 확인해 주세요.');
-  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 기본 양 · 웹 검색 기반';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,2);
+  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 기본 양 · 웹 검색 기반';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const chunks=candidate?.groundingMetadata?.groundingChunks||[],sourceList=$('sourceList');sourceList.replaceChildren();const seen=new Set(),savedSources=[];
   chunks.forEach(c=>{const w=c.web;if(!w?.uri||seen.has(w.uri))return;seen.add(w.uri);savedSources.push({title:w.title||w.uri,url:w.uri});const a=document.createElement('a');a.className='source';a.href=w.uri;a.target='_blank';a.rel='noopener noreferrer';a.textContent=w.title||w.uri;const span=document.createElement('span');try{span.textContent=new URL(w.uri).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);sourceList.appendChild(a)});
   if(!sourceList.children.length){const p=document.createElement('p');p.className='empty';p.textContent='API 응답에 출처 링크가 포함되지 않았어요.';sourceList.appendChild(p)}
