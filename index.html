@@ -34,7 +34,7 @@
 .history-modal-footer button{width:100%;background:#f1f5f9;color:#334155;font-weight:800;padding:10px;border-radius:12px;font-size:12px}
 @media(max-width:420px){.history-modal-panel{padding:14px 12px}.history-card{padding:10px;gap:5px}.history-card-actions{gap:3px}.history-load-btn{padding:7px 8px}.history-card-detail{max-width:210px}}
 
-.result-serving{max-width:300px;margin:0 0 18px}.answer .recipe-ingredients{display:grid;gap:2px}.answer .recipe-ingredient{padding-left:1em;text-indent:-1em}.answer .cooking-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .cooking-table td{border:0;padding:5px 4px;vertical-align:top}.answer .cooking-table .step-number{width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:750}.answer .cooking-table .step-text{text-align:left;overflow-wrap:anywhere}.serving-stepper{display:flex;align-items:center;gap:12px}.serving-step{width:44px;height:44px;padding:0;border-radius:14px;background:#f1f5f9;color:#334155;font-size:24px;display:flex;align-items:center;justify-content:center}.serving-step:hover:not(:disabled){background:#e0e7ff;color:#4338ca}.serving-step:disabled{opacity:.35;cursor:not-allowed}.serving-stepper output{min-width:76px;text-align:center;font-size:18px;font-weight:900;color:#1e293b}
+.result-serving{max-width:300px;margin:0 0 18px}.answer .recipe-ingredients{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .recipe-ingredients td{border:0;padding:5px 4px;vertical-align:top}.answer .recipe-ingredients .ingredient-name{text-align:left;overflow-wrap:anywhere}.answer .recipe-ingredients .ingredient-amount{width:34%;text-align:left;overflow-wrap:anywhere}.answer .cooking-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .cooking-table td{border:0;padding:5px 4px;vertical-align:top}.answer .cooking-table .step-number{width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:750}.answer .cooking-table .step-text{text-align:left;overflow-wrap:anywhere}.serving-stepper{display:flex;align-items:center;gap:12px}.serving-step{width:44px;height:44px;padding:0;border-radius:14px;background:#f1f5f9;color:#334155;font-size:24px;display:flex;align-items:center;justify-content:center}.serving-step:hover:not(:disabled){background:#e0e7ff;color:#4338ca}.serving-step:disabled{opacity:.35;cursor:not-allowed}.serving-stepper output{min-width:76px;text-align:center;font-size:18px;font-weight:900;color:#1e293b}
 
 .recipe-style-fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-wrap:wrap;gap:10px 18px}
 .recipe-style-fieldset legend{display:block;font-size:14px;font-weight:750;margin:0 0 9px;padding:0}
@@ -136,14 +136,14 @@ function scaleIngredientText(text,baseServings,targetServings){
    else if(steps.length)steps[steps.length-1].text+=' '+line.trim();
   }
  });
- const ingredientsHtml=ingredientLines.map(line=>'<div class="recipe-ingredient">- '+esc(line)+'</div>').join('');
+ const ingredientsHtml='<table class="recipe-ingredients" aria-label="필요한 재료"><tbody>'+ingredientLines.map(line=>{const match=line.match(/^(.+?)\\s*[:：]\\s*(.*)$/);return '<tr><td class="ingredient-name">'+esc(match?match[1].replace(/^[-•*]\\s*/,'').trim():line)+'</td><td class="ingredient-amount">'+esc(match?match[2]:'')+'</td></tr>'}).join('')+'</tbody></table>';
  const tableHtml='<table class="cooking-table" aria-label="조리 순서"><tbody>'+steps.map(step=>'<tr><td class="step-number">'+esc(step.number)+'</td><td class="step-text">'+esc(step.text)+'</td></tr>').join('')+'</tbody></table>';
- return '<div class="recipe-section-title">🥕 필요한 재료 ('+esc(foodAmountLabel(target,base))+')</div><div class="recipe-ingredients">'+ingredientsHtml+'</div><div class="recipe-section-title" style="margin-top:18px">👩‍🍳 조리 순서</div>'+tableHtml;
+ return '<div class="recipe-section-title">🥕 필요한 재료</div>'+ingredientsHtml+'<div class="recipe-section-title" style="margin-top:18px">👩‍🍳 조리 순서</div>'+tableHtml;
 }
 function updateDisplayedServings(target){
  if(!currentBaseText)return;
  $('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,target);
- $('resultSub').textContent=selectedStyle()+' · '+foodAmountLabel(target,2)+' · '+(activeHistoryId?'저장된 레시피':'웹 검색 기반')+' · 재료 양은 계산으로 조정';
+ $('resultSub').textContent=selectedStyle();
  if(activeHistoryId){const items=readHistory(),item=items.find(x=>String(x.id)===String(activeHistoryId));if(item){item.servings=target;writeHistory(items)}}
 }
 function renderHistory(){
@@ -174,7 +174,7 @@ $('historyList').addEventListener('click',e=>{
 function showSavedRecipe(item){
  $('food').value=item.food||item.name||'';setSelectedStyle(item.option||'가장 인기 많은');
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
- $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+foodAmountLabel(Number(item.servings||currentBaseServings||2),2)+' · 저장된 레시피';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
+ $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=item.option||'';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
  (item.sources||[]).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
  if(!list.children.length){const p=document.createElement('p');p.className='empty';p.textContent='저장된 참고 출처가 없습니다.';list.appendChild(p)}
@@ -189,7 +189,7 @@ form.addEventListener('submit',async e=>{
   const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],tools:[{google_search:{}}],generationConfig:{maxOutputTokens:5000}})});
   const data=await resp.json();if(!resp.ok)throw new Error(data?.error?.message||('API 요청 실패 ('+resp.status+')'));
   const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\n').trim();if(!answerText)throw new Error('응답에 레시피 텍스트가 없어요. API 키와 모델 사용 설정을 확인해 주세요.');
-  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 기본 양 · 웹 검색 기반';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
+  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const chunks=candidate?.groundingMetadata?.groundingChunks||[],sourceList=$('sourceList');sourceList.replaceChildren();const seen=new Set(),savedSources=[];
   chunks.forEach(c=>{const w=c.web;if(!w?.uri||seen.has(w.uri))return;seen.add(w.uri);savedSources.push({title:w.title||w.uri,url:w.uri});const a=document.createElement('a');a.className='source';a.href=w.uri;a.target='_blank';a.rel='noopener noreferrer';a.textContent=w.title||w.uri;const span=document.createElement('span');try{span.textContent=new URL(w.uri).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);sourceList.appendChild(a)});
   if(!sourceList.children.length){const p=document.createElement('p');p.className='empty';p.textContent='API 응답에 출처 링크가 포함되지 않았어요.';sourceList.appendChild(p)}
