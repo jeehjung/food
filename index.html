@@ -23,7 +23,6 @@
 .history-star{background:transparent;border:0;padding:2px;font-size:16px;color:#cbd5e1;line-height:1;flex-shrink:0}
 .history-star.active{color:#fbbf24}
 .history-card-title{font-size:14px;font-weight:800;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.history-count-badge{font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px;font-weight:800;white-space:nowrap}
 .history-card-detail{font-size:11px;color:#64748b;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .history-card-date{font-size:10px;color:#94a3b8;margin-top:2px}
 .history-card-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
@@ -62,6 +61,7 @@
 'use strict';
 const $=id=>document.getElementById(id),form=$('recipeForm'),statusBox=$('status'),result=$('result');
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
+function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
 const API_KEY_STORAGE='iuns_recipe_gemini_api_key';
 const HISTORY_STORAGE='iuns_recipe_history_v1';
 let historyFilter='all';
@@ -160,7 +160,7 @@ $('historyList').addEventListener('click',e=>{
  else if(b.dataset.action==='load'){showSavedRecipe(item);closeHistoryModal()}
 });
 function showSavedRecipe(item){
- $('food').value=item.food||item.name||'';$('style').value=item.option||'가장 인기 많은';
+ $('food').value=item.food||item.name||'';setSelectedStyle(item.option||'가장 인기 많은');
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
  $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=(item.option||'')+' · '+(item.servings||currentBaseServings||2)+'인분 · 저장된 레시피';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
@@ -172,16 +172,16 @@ form.addEventListener('submit',async e=>{
  e.preventDefault();const food=$('food').value.trim(),key=getStoredApiKey();if(!food)return;
  if(!key){openApiKeyModal();setStatus('먼저 Gemini API 키를 설정해 주세요.');return}
  const btn=$('searchBtn');btn.disabled=true;btn.textContent='검색 중…';result.classList.remove('show');setStatus('웹에서 레시피 정보를 확인하고 있어요. 잠시만 기다려 주세요.');
- const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${$('style').value}\n기준 분량: 2인분\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '필요한 재료 (2인분)'과 '조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 2인분 기준으로 제시하세요.`;
+ const prompt=`당신은 간결한 한국어 레시피 에디터입니다. Google Search로 아래 음식의 레시피를 조사하고, 결과는 짧고 실용적으로 작성하세요.\n음식: ${food}\n옵션: ${selectedStyle()}\n기준 분량: 2인분\n요구사항:\n1) YouTube, Instagram 공개 게시물/릴스와 요리 웹페이지를 검색해 레시피를 참고하세요. '가장 인기 많은' 옵션이면 검색에서 확인 가능한 인기도 근거를 우선하고, 확인할 수 없으면 인기를 단정하지 마세요.\n2) 출력은 반드시 다음 두 항목만 포함하세요: '필요한 재료 (2인분)'과 '조리 순서'. 재료는 각 줄을 '- 재료명: 양' 형식으로 작성하고 숫자가 있는 재료는 수치와 단위를 명확히 적으세요. 조리 순서는 번호를 매겨 핵심 행동과 필요한 시간만 짧게 적으세요.\n3) 소개, 트렌드 설명, 조리 시간·난이도, 팁, 보관법, 결론 등 다른 항목은 쓰지 마세요.\n4) 근거 자료에 없는 사실이나 출처를 지어내지 마세요. 실용적인 2인분 기준으로 제시하세요.`;
  try{
   const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],tools:[{google_search:{}}],generationConfig:{maxOutputTokens:5000}})});
   const data=await resp.json();if(!resp.ok)throw new Error(data?.error?.message||('API 요청 실패 ('+resp.status+')'));
   const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\n').trim();if(!answerText)throw new Error('응답에 레시피 텍스트가 없어요. API 키와 모델 사용 설정을 확인해 주세요.');
-  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=$('style').value+' · 2인분 · 웹 검색 기반';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,2);
+  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle()+' · 2인분 · 웹 검색 기반';$('answer').textContent=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const chunks=candidate?.groundingMetadata?.groundingChunks||[],sourceList=$('sourceList');sourceList.replaceChildren();const seen=new Set(),savedSources=[];
   chunks.forEach(c=>{const w=c.web;if(!w?.uri||seen.has(w.uri))return;seen.add(w.uri);savedSources.push({title:w.title||w.uri,url:w.uri});const a=document.createElement('a');a.className='source';a.href=w.uri;a.target='_blank';a.rel='noopener noreferrer';a.textContent=w.title||w.uri;const span=document.createElement('span');try{span.textContent=new URL(w.uri).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);sourceList.appendChild(a)});
   if(!sourceList.children.length){const p=document.createElement('p');p.className='empty';p.textContent='API 응답에 출처 링크가 포함되지 않았어요.';sourceList.appendChild(p)}
-  const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:$('style').value,servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
+  const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
   writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 레시피가 이력에 저장됐어요.');result.scrollIntoView({behavior:'smooth',block:'start'})
  }catch(err){setStatus('레시피를 가져오지 못했어요: '+err.message+' — API 키, 네트워크 연결, 모델 설정을 확인해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
