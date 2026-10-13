@@ -144,6 +144,19 @@ function scaleCookingQuantities(text,factor){
   return formatAmount(scaledFirst)+scaledRange+space+unit;
  });
 }
+function adjustCookingTime(text,factor){
+ if(factor<=1)return String(text||'');
+ const step=String(text||'');
+ if(!/(끓이|졸이|삶|데치|볶|굽|익히|튀기|조리|가열|煮)/.test(step))return step;
+ const timeFactor=1+Math.min(0.3,0.15*Math.log2(factor));
+ return step.replace(/\(([^()]*)\)/g,(whole,inside)=>{
+  if(!/(초|분|시간)/.test(inside))return whole;
+  return '('+inside.replace(/(약\s*)?(\d+(?:\.\d+)?)(\s*~\s*(\d+(?:\.\d+)?))?\s*(초|분|시간)/g,(match,approx,first,range,end,unit)=>{
+   const roundTime=value=>{const scaled=Number(value)*timeFactor;return String(unit==='초'?Math.ceil(scaled/5)*5:unit==='시간'?Math.round(scaled*10)/10:Math.ceil(scaled))};
+   return (approx||'')+roundTime(first)+(range?'~'+roundTime(end):'')+' '+unit;
+  })+')';
+ });
+}
 function scaleIngredientText(text,baseServings,targetServings){
  const base=Number(baseServings)||2,target=Number(targetServings)||base;
  const factor=target/base;
@@ -165,8 +178,8 @@ function scaleIngredientText(text,baseServings,targetServings){
    ingredientLines.push(scaled.replace(/^\s*[-•*]\s*/,'').trim());
   }else if(inCooking){
    const match=line.trim().match(/^(\d+)[.)、]\s*(.*)$/);
-   if(match)steps.push({number:match[1],text:scaleCookingQuantities(match[2],factor)});
-   else if(steps.length)steps[steps.length-1].text+=' '+scaleCookingQuantities(line.trim(),factor);
+   if(match)steps.push({number:match[1],text:adjustCookingTime(scaleCookingQuantities(match[2],factor),factor)});
+   else if(steps.length)steps[steps.length-1].text+=' '+adjustCookingTime(scaleCookingQuantities(line.trim(),factor),factor);
   }
  });
  const ingredientsHtml='<table class="recipe-ingredients" aria-label="필요한 재료"><tbody>'+ingredientLines.map((line,index)=>{const match=line.match(/^(.+?)\s*[:：]\s*(.*)$/);return '<tr><td class="ingredient-number">'+(index+1)+'</td><td class="ingredient-name">'+esc(match?match[1].replace(/^[-•*]\s*/,'').trim():line)+'</td><td class="ingredient-amount">'+esc(match?match[2]:'')+'</td></tr>'}).join('')+'</tbody></table>';
