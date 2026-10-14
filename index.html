@@ -279,23 +279,32 @@ form.addEventListener('submit',async e=>{
   }catch(e){}
   const recipeVideo=videos[0];
   setStatus('제목에 음식명이 정확히 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리하고 있어요.');
+  const recipeReferenceVideos=videos.slice(1,4);
   const videoContext='제목: '+recipeVideo.title+'\\n채널: '+recipeVideo.channel+'\\n게시일: '+(recipeVideo.publishedAt?recipeVideo.publishedAt.slice(0,10):'미상')+'\\n조회수: '+recipeVideo.views+'\\n설명: '+recipeVideo.description.slice(0,900)+'\\nURL: '+recipeVideo.url;
-  const prompt=`당신은 한국어 레시피 에디터입니다. 반드시 아래 YouTube 영상 자체를 시청·분석한 내용을 기준으로 레시피를 작성하세요. 제목과 설명란만 보고 추측하지 마세요. 영상 속 음성, 자막, 화면에 실제로 등장하는 재료와 양념을 확인하세요.
+  const referenceContext=recipeReferenceVideos.map((v,i)=>'보조 영상 '+(i+1)+': '+v.title+'\\n채널: '+v.channel+'\\n조회수: '+v.views+'\\n설명: '+v.description.slice(0,500)+'\\nURL: '+v.url).join('\\n\\n');
+  const prompt=`당신은 한국어 레시피 에디터입니다. 기준 영상 1개를 레시피의 주된 출처로 사용하고, 보조 영상은 양과 시간의 추정이 꼭 필요할 때만 제한적으로 참고하세요.
 음식: ${food}
 옵션: ${selectedStyle()}
 기준 양: 2인분
-분석할 유일한 YouTube 영상:
+
+[기준 영상 — 반드시 재료 구성과 조리 순서를 결정하는 유일한 출처]
 ${videoContext}
+
+[보조 영상 — 양과 조리 시간 추정에만 사용 가능]
+${referenceContext||'보조 영상 없음'}
+
 필수 규칙:
-1) 영상의 시작부터 끝까지 조리 과정을 살펴보고, 말로 언급되거나 화면에 실제로 넣는 모든 재료와 양념을 빠짐없이 추출하세요. 특히 다시다, 맛소금, 설탕, 후추, 조미료처럼 소량이거나 마지막에 추가되는 재료도 놓치지 마세요. 영상에서 재료를 넣는 시점과 순서도 반영하세요.
-2) 영상에서 실제로 확인되는 재료와 일반적인 보완 재료를 구분하세요. 영상에서 확인되지 않는 재료를 영상에 나온 것처럼 만들지 마세요. 양이 명확하지 않으면 '영상에서 양 미확인'이라고 표시하거나 합리적인 2인분 양을 제안하되 추정임을 밝혀 주세요.
-3) '아이들도 먹기 좋은' 옵션이면 영상의 레시피를 바탕으로 맵기와 자극적인 재료만 조정하고, 다른 영상의 조리법은 가져오지 마세요. '가장 인기 많은' 옵션도 이 영상 하나만 사용하세요.
-4) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
-5) 조리 단계마다 재료명과 용량을 명시하고 재료 목록과 일치시키세요. 각 단계에 현실적인 조리 시간을 표시하되 영상에서 확인한 시간인지 추정인지 구분하세요. 다른 소개나 결론은 쓰지 마세요.`;
+1) 기준 영상의 음성, 자막, 화면에 실제로 등장하는 재료와 양념을 빠짐없이 확인하세요. 특히 다시다, 맛소금, 설탕, 후추처럼 소량이거나 마지막에 추가되는 재료도 놓치지 말고, 기준 영상에서 재료를 넣는 순서를 반영하세요.
+2) 재료 종류, 양념 종류, 재료 투입 순서, 조리법은 기준 영상만 따르세요. 보조 영상에서만 등장하는 재료를 추가하거나 기준 영상의 조리법을 바꾸지 마세요.
+3) 기준 영상에서 재료의 정확한 양이나 조리 시간이 확인되지 않을 때에만 보조 영상을 참고해 합리적인 양/시간을 추정할 수 있습니다. 이 경우에도 기준 영상의 레시피에 이미 있는 재료에 한정하고, 보조 영상의 수치를 그대로 적용하기 어렵다면 2인분 기준으로 조정하세요. 보조 영상을 참고해 추정한 양이나 시간은 '추정'이라고 표시하세요.
+4) 기준 영상에서 실제로 확인된 정보와 추정한 정보를 구분하세요. 영상에서 확인되지 않는 정보를 영상에서 확인했다고 주장하지 마세요. 보조 영상이 기준 영상과 다르면 기준 영상을 우선하세요.
+5) '아이들도 먹기 좋은' 옵션이면 기준 영상 레시피를 바탕으로 맵기와 자극적인 재료만 조정하세요.
+6) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
+7) 조리 단계마다 재료명과 용량을 명시하고 재료 목록과 일치시키세요. 현실적인 조리 시간을 표시하되 추정이면 밝혀 주세요. 다른 소개나 결론은 쓰지 마세요.`;
   let usedModel='gemini-3.8-flash',resp,data;
   const geminiRequest=async model=>{
    let response;
-   try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model,input:[{type:'text',text:prompt},{type:'video',uri:recipeVideo.url}]})})}
+   try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model,input:[{type:'text',text:prompt},{type:'video',uri:recipeVideo.url},...recipeReferenceVideos.map(v=>({type:'video',uri:v.url}))]})})}
    catch(networkErr){throw new Error(describeNetworkError(networkErr))}
    return {response,body:await response.json().catch(()=>({}))};
   };
@@ -320,8 +329,8 @@ ${videoContext}
   }
   const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+usedModel;
   $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
-  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[{title:recipeVideo.title,url:recipeVideo.url}];
-  [recipeVideo].forEach(v=>{
+  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[recipeVideo,...recipeReferenceVideos].map(v=>({title:v.title,url:v.url}));
+  [recipeVideo,...recipeReferenceVideos].forEach(v=>{
    const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';
    a.textContent=v.title+' · '+v.channel;
    const span=document.createElement('span');const date=v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상';span.textContent=date+' · 조회수 '+v.views.toLocaleString('ko-KR')+'회';
@@ -329,7 +338,7 @@ ${videoContext}
   });
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
-  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 선택한 YouTube 영상의 실제 화면과 음성 정보를 바탕으로 레시피를 정리했어요. 영상에서 재료나 양이 명확하지 않은 부분은 추정일 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 기준 영상의 레시피를 유지하고, 필요한 경우 보조 영상으로 양과 조리 시간만 추정했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
