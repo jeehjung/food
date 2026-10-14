@@ -277,16 +277,17 @@ form.addEventListener('submit',async e=>{
    if(statResp.ok){const stats=new Map((statData.items||[]).map(v=>[v.id,Number(v.statistics?.viewCount||0)]));videos.forEach(v=>v.views=stats.get(v.id)||0);videos.sort((a,b)=>b.views-a.views)}
   }catch(e){}
   const topVideos=videos.slice(0,5);
-  setStatus('조회수 상위 '+topVideos.length+'개 영상을 기준으로 Gemini가 레시피를 정리하고 있어요.');
-  const videoContext=topVideos.map((v,i)=>(i+1)+'. 제목: '+v.title+'\n채널: '+v.channel+'\n게시일: '+(v.publishedAt?v.publishedAt.slice(0,10):'미상')+'\n조회수: '+v.views+'\n설명: '+v.description.slice(0,900)+'\nURL: '+v.url).join('\n\n');
-  const prompt=`당신은 한국어 레시피 에디터입니다. 아래는 사용자가 입력한 음식과 관련해 YouTube Data API에서 실제로 검색한 영상 중 조회수 상위 최대 5개입니다. 영상 제목과 설명에 있는 정보만 근거로 삼고, 설명에 없는 세부 조리법은 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요. 영상 정보가 서로 다르면 가장 관련성 높은 레시피를 종합하세요.
+  const recipeVideo=topVideos[0];
+  setStatus('조회수가 가장 높은 영상 1개를 기준으로 Gemini가 레시피를 정리하고 있어요.');
+  const videoContext='제목: '+recipeVideo.title+'\\n채널: '+recipeVideo.channel+'\\n게시일: '+(recipeVideo.publishedAt?recipeVideo.publishedAt.slice(0,10):'미상')+'\\n조회수: '+recipeVideo.views+'\\n설명: '+recipeVideo.description.slice(0,900)+'\\nURL: '+recipeVideo.url;
+  const prompt=`당신은 한국어 레시피 에디터입니다. 아래에 제공된 영상 딱 1개만 레시피의 유일한 출처로 사용하세요. 다른 YouTube 영상이나 다른 출처의 레시피를 섞거나 종합하지 마세요. 영상 제목과 설명에 있는 정보를 우선 사용하고, 설명에 없는 세부 조리법은 필요한 경우 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요.
 음식: ${food}
 옵션: ${selectedStyle()}
 기준 양: 2인분
-검색된 YouTube 영상:
+유일한 참고 YouTube 영상:
 ${videoContext}
 요구사항:
-1) '가장 인기 많은' 옵션이면 검색된 영상 중 조회수가 높은 관련 영상들을 우선 참고하세요. '아이들도 먹기 좋은' 옵션이면 맵기와 자극적인 재료를 줄인 버전으로 정리하세요.
+1) 제공된 단일 영상의 레시피를 기준으로 작성하세요. '아이들도 먹기 좋은' 옵션이면 해당 영상의 레시피를 바탕으로 맵기와 자극적인 재료만 줄여 조정하고, 다른 영상의 조리법을 가져오지 마세요. '가장 인기 많은' 옵션에서도 이 영상 외의 출처는 참고하지 마세요.
 2) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
 3) 각 조리 단계에 필요한 적절한 시간을 함께 표시하세요. 예: '양파를 볶아 향을 낸다 (2~3분)', '뚜껑을 덮고 익힌다 (약 8분)'. 영상 정보에 조리 시간이 없으면 재료와 조리법에 맞는 현실적인 예상 시간을 제안하되, 영상에서 확인한 사실처럼 단정하지 마세요. 여러 단계의 시간이 겹치면 불필요하게 총 조리 시간을 부풀리지 마세요.\n4) 조리 순서에서도 재료를 넣는 단계마다 재료명과 용량을 다시 명시하세요. 예: '양파 1/2개와 다진 마늘 1큰술을 넣고 2~3분 볶는다.' 필요한 재료 목록의 2인분 기준 용량과 일치시키고, '적당량'처럼 모호하게만 쓰지 마세요. 이미 넣은 재료를 다시 언급할 필요가 없는 단계에서는 억지로 반복하지 않아도 됩니다.\n5) 영상에 없는 정확한 양은 합리적인 2인분 기준으로 제안하되, 특정 영상의 실제 계량이라고 단정하지 마세요. 다른 소개나 결론은 쓰지 마세요.`;
   let usedModel='gemini-3.8-flash',resp,data;
