@@ -56,7 +56,7 @@
 
 </form>
 </section>
-<div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="deleteNonFavorites" class="history-delete-nonfavorites">즐겨찾기 외 레시피 모두 삭제</button><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🔎 참고한 웹 출처</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
+<div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="deleteNonFavorites" class="history-delete-nonfavorites">즐겨찾기 외 레시피 모두 삭제</button><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🎬 레시피 기준 영상</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
 <div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">🔑 Google Gemini API Key 설정</h2><p>Gemini AI 레시피 검색을 사용하려면 API 키가 필요합니다.<br><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Gemini API Key 발급받기 ↗</a></p><label for="apiKeyInput">Gemini API Key</label><input id="apiKeyInput" type="password" placeholder="Gemini API 키" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true"><label for="youtubeApiKeyInput" style="margin-top:12px">YouTube Data API Key</label><input id="youtubeApiKeyInput" type="password" placeholder="YouTube API 키" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true"><p class="hint">YouTube 검색을 위해 별도 API 키가 필요해요. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">YouTube API Key 발급받기 ↗</a> (YouTube Data API 사용 설정 필요)</p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">저장한 키는 이 브라우저의 localStorage에 보관되어 새로고침 후에도 유지됩니다. 같은 브라우저라도 사이트 주소(도메인)가 다르면 별도로 저장됩니다.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
 </main>
 <script>
@@ -227,7 +227,7 @@ function renderHistory(){
  entries.forEach(item=>{
   const card=document.createElement('div');card.className='history-card'+(item.favorite?' favorite':'');
   const date=item.createdAt?new Date(item.createdAt).toLocaleString('ko-KR',{dateStyle:'short',timeStyle:'short'}):'';
-  const sourceCount=(item.sources||[]).length;
+  const sourceCount=Math.min((item.sources||[]).length,1);
   card.innerHTML='<div class="history-card-main" data-action="load" data-id="'+escapeHtml(item.id)+'"><div class="history-card-title-row"><button type="button" class="history-star '+(item.favorite?'active':'')+'" data-action="favorite" data-id="'+escapeHtml(item.id)+'" aria-label="즐겨찾기" title="즐겨찾기">★</button><span class="history-card-title">'+escapeHtml(item.name||item.food||'레시피')+'</span></div><p class="history-card-detail">'+escapeHtml(item.option||'')+' · 참고 출처 '+sourceCount+'개</p><p class="history-card-date">'+escapeHtml(date)+'</p></div><div class="history-card-actions"><button type="button" class="history-icon-btn rename" data-action="rename" data-id="'+escapeHtml(item.id)+'" title="이름 수정" aria-label="이름 수정">✎</button><button type="button" class="history-load-btn" data-action="load" data-id="'+escapeHtml(item.id)+'">불러오기</button><button type="button" class="history-icon-btn delete" data-action="delete" data-id="'+escapeHtml(item.id)+'" title="삭제" aria-label="삭제">⌫</button></div>';
   list.appendChild(card);
  });
@@ -245,7 +245,7 @@ function showSavedRecipe(item){
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
  $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=item.option||'';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
- (item.sources||[]).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
+ (item.sources||[]).slice(0,1).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
  if(!list.children.length){const p=document.createElement('p');p.className='empty';p.textContent='저장된 참고 출처가 없습니다.';list.appendChild(p)}
  result.classList.add('show');setStatus('저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'})
 }
@@ -317,8 +317,8 @@ ${videoContext}
   }
   const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+usedModel;
   $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
-  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[];
-  videos.forEach(v=>{
+  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[{title:recipeVideo.title,url:recipeVideo.url}];
+  [recipeVideo].forEach(v=>{
    savedSources.push({title:v.title,url:v.url});
    const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';
    a.textContent=v.title+' · '+v.channel;
@@ -327,7 +327,7 @@ ${videoContext}
   });
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
-  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! YouTube 검색 영상과 Gemini가 정리한 레시피를 표시했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 조회수가 가장 높은 YouTube 영상 1개를 기준으로 레시피를 정리했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
