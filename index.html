@@ -71,6 +71,27 @@ let activeHistoryId=null;
 let currentBaseText='';
 let currentBaseServings=2;
 function setStatus(msg,show=true){statusBox.textContent=msg;statusBox.classList.toggle('show',show)}
+function describeApiError(service,status,data){
+ const err=data?.error||data||{},detail=String(err.message||err.status||'').trim();
+ const reasons=(err.errors||[]).map(x=>x.reason||'').join(' ');
+ const info=(detail+' '+reasons+' '+String(err.status||'')).toLowerCase();
+ const suffix=detail&&!['unavailable','resource_exhausted','invalid_argument'].includes(detail.toLowerCase())?' (상세: '+detail+')':'';
+ if(status===503||info.includes('unavailable')||info.includes('overloaded'))return service+' 서비스가 일시적으로 과부하 상태예요. 잠시 후 다시 시도해 주세요.';
+ if(status===429||info.includes('resource_exhausted')||info.includes('quota')||info.includes('quotaexceeded')||info.includes('rate limit'))return service+' API 사용 한도 또는 요청 횟수를 초과했어요. 할당량·결제 설정을 확인하거나 잠시 후 다시 시도해 주세요.';
+ if(info.includes('keyinvalid')||info.includes('api key not valid')||info.includes('invalid api key')||status===401)return service+' API 키가 잘못되었거나 유효하지 않아요. API 키를 다시 확인해 주세요.';
+ if(info.includes('accessnotconfigured')||info.includes('servicedisabled')||info.includes('has not been used')||info.includes('is disabled'))return service+' API가 프로젝트에서 활성화되지 않았어요. Google Cloud에서 해당 API를 사용 설정해 주세요.';
+ if(info.includes('refererblocked')||info.includes('iprefererblocked')||info.includes('api_key_service_blocked')||info.includes('blocked due to restrictions'))return service+' API 키의 웹사이트/앱 제한 설정 때문에 요청이 차단됐어요. API 키 제한과 허용 도메인을 확인해 주세요.';
+ if(status===403)return service+' API 접근이 거부됐어요. API 키 권한, API 활성화 여부, 키 제한 설정 및 할당량을 확인해 주세요.'+suffix;
+ if(status===400)return service+' 요청 형식이 올바르지 않거나 입력값을 처리할 수 없어요. 검색어와 API 요청 설정을 확인해 주세요.'+suffix;
+ if(status===404)return service+' 요청한 모델 또는 API 주소를 찾을 수 없어요. 모델 이름과 API 설정을 확인해 주세요.'+suffix;
+ if(status===504||info.includes('deadline')||info.includes('timed out'))return service+' 응답 시간이 초과됐어요. 잠시 후 다시 시도해 주세요.';
+ if(status>=500)return service+' 서버에서 오류가 발생했어요. 잠시 후 다시 시도해 주세요.'+suffix;
+ return service+' API 요청에 실패했어요'+(status?' (HTTP '+status+')':'')+'. API 키와 설정을 확인해 주세요.'+suffix;
+}
+function describeNetworkError(err){
+ if(err instanceof TypeError)return 'Google API에 연결하지 못했어요. 인터넷 연결을 확인하고, 브라우저의 네트워크 차단이나 확장 프로그램이 요청을 막는지 확인해 주세요.';
+ return err?.message||'알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
+}
 function getStoredApiKey(){try{return localStorage.getItem(API_KEY_STORAGE)||''}catch(e){return ''}}
 function getStoredYouTubeApiKey(){try{return localStorage.getItem(YOUTUBE_API_KEY_STORAGE)||''}catch(e){return ''}}
 function updateApiKeyUI(){updateStorageUsage();const hasKey=!!getStoredApiKey().trim()&&!!getStoredYouTubeApiKey().trim();$('apiKeyBtnText').textContent=hasKey?'API 키 설정됨':'API 키 설정';$('apiKeyOpen').classList.toggle('set',hasKey)}
@@ -236,9 +257,11 @@ form.addEventListener('submit',async e=>{
  try{
   const publishedAfter=new Date(Date.now()-365*24*60*60*1000).toISOString();
   const ytParams=new URLSearchParams({part:'snippet',type:'video',maxResults:'10',order:'viewCount',regionCode:'KR',relevanceLanguage:'ko',publishedAfter,q:food+' 레시피',key:youtubeKey});
-  const ytResp=await fetch('https://www.googleapis.com/youtube/v3/search?'+ytParams.toString());
-  const ytData=await ytResp.json();
-  if(!ytResp.ok)throw new Error('YouTube 검색 실패: '+(ytData?.error?.message||ytResp.status)+' — YouTube Data API 활성화 및 API 키 제한 설정을 확인해 주세요.');
+  let ytResp,ytData;
+  try{ytResp=await fetch('https://www.googleapis.com/youtube/v3/search?'+ytParams.toString())}
+  catch(networkErr){throw new Error(describeNetworkError(networkErr))}
+  ytData=await ytResp.json().catch(()=>({}));
+  if(!ytResp.ok)throw new Error(describeApiError('YouTube Data API',ytResp.status,ytData));
   const videos=(ytData.items||[]).filter(item=>item.id?.videoId).map(item=>({
    id:item.id.videoId,title:item.snippet?.title||'제목 없음',description:item.snippet?.description||'',
    channel:item.snippet?.channelTitle||'채널 정보 없음',publishedAt:item.snippet?.publishedAt||'',
@@ -265,18 +288,31 @@ ${videoContext}
 1) '가장 인기 많은' 옵션이면 검색된 영상 중 조회수가 높은 관련 영상들을 우선 참고하세요. '아이들도 먹기 좋은' 옵션이면 맵기와 자극적인 재료를 줄인 버전으로 정리하세요.
 2) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
 3) 각 조리 단계에 필요한 적절한 시간을 함께 표시하세요. 예: '양파를 볶아 향을 낸다 (2~3분)', '뚜껑을 덮고 익힌다 (약 8분)'. 영상 정보에 조리 시간이 없으면 재료와 조리법에 맞는 현실적인 예상 시간을 제안하되, 영상에서 확인한 사실처럼 단정하지 마세요. 여러 단계의 시간이 겹치면 불필요하게 총 조리 시간을 부풀리지 마세요.\n4) 조리 순서에서도 재료를 넣는 단계마다 재료명과 용량을 다시 명시하세요. 예: '양파 1/2개와 다진 마늘 1큰술을 넣고 2~3분 볶는다.' 필요한 재료 목록의 2인분 기준 용량과 일치시키고, '적당량'처럼 모호하게만 쓰지 마세요. 이미 넣은 재료를 다시 언급할 필요가 없는 단계에서는 억지로 반복하지 않아도 됩니다.\n5) 영상에 없는 정확한 양은 합리적인 2인분 기준으로 제안하되, 특정 영상의 실제 계량이라고 단정하지 마세요. 다른 소개나 결론은 쓰지 마세요.`;
-  let usedModel='gemini-3.8-flash';
-  let resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:5000}})});
-  let data=await resp.json();
+  let usedModel='gemini-3.8-flash',resp,data;
+  const geminiRequest=async model=>{
+   let response;
+   try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:5000}})})}
+   catch(networkErr){throw new Error(describeNetworkError(networkErr))}
+   return {response,body:await response.json().catch(()=>({}))};
+  };
+  const primary=await geminiRequest('gemini-3.8-flash');
+  resp=primary.response;data=primary.body;
   if(!resp.ok){
-   const firstError=data?.error?.message||('API 요청 실패 ('+resp.status+')');
-   resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:5000}})});
-   data=await resp.json();
-   if(!resp.ok)throw new Error('Gemini 요청 실패: '+firstError+' / 대체 모델: '+(data?.error?.message||resp.status));
+   const firstError=describeApiError('Gemini API (기본 모델)',resp.status,data);
+   let fallback;
+   try{fallback=await geminiRequest('gemini-3.5-flash-lite')}
+   catch(networkErr){throw new Error(firstError+' 대체 모델 연결 실패: '+describeNetworkError(networkErr))}
+   resp=fallback.response;data=fallback.body;
+   if(!resp.ok)throw new Error('레시피 생성에 실패했어요.\n기본 모델: '+firstError+'\n대체 모델: '+describeApiError('Gemini API (대체 모델)',resp.status,data));
    usedModel='gemini-3.5-flash-lite';
   }
-  const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\n').trim();
-  if(!answerText)throw new Error('Gemini가 레시피를 반환하지 않았어요. API 키와 무료 사용량을 확인해 주세요.');
+  const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\\n').trim();
+  if(!answerText){
+   const block=data?.promptFeedback?.blockReason,finish=candidate?.finishReason;
+   if(block)throw new Error('Gemini가 요청을 안전 정책에 따라 차단했어요 ('+block+'). 검색어를 바꾸어 다시 시도해 주세요.');
+   if(finish==='MAX_TOKENS')throw new Error('Gemini 응답이 길이 제한으로 중단됐어요. 다시 시도해 주세요.');
+   throw new Error('Gemini가 레시피 내용을 반환하지 않았어요. API 사용량과 모델 응답 상태를 확인한 뒤 다시 시도해 주세요.');
+  }
   const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+usedModel;
   $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[];
@@ -290,7 +326,7 @@ ${videoContext}
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
   writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! YouTube 검색 영상과 Gemini가 정리한 레시피를 표시했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
- }catch(err){setStatus('레시피를 가져오지 못했어요: '+err.message)}
+ }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
 </script></body></html>
