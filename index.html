@@ -280,37 +280,40 @@ form.addEventListener('submit',async e=>{
   const recipeVideo=videos[0];
   setStatus('제목에 음식명이 정확히 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리하고 있어요.');
   const videoContext='제목: '+recipeVideo.title+'\\n채널: '+recipeVideo.channel+'\\n게시일: '+(recipeVideo.publishedAt?recipeVideo.publishedAt.slice(0,10):'미상')+'\\n조회수: '+recipeVideo.views+'\\n설명: '+recipeVideo.description.slice(0,900)+'\\nURL: '+recipeVideo.url;
-  const prompt=`당신은 한국어 레시피 에디터입니다. 아래에 제공된 영상 딱 1개만 레시피의 유일한 출처로 사용하세요. 다른 YouTube 영상이나 다른 출처의 레시피를 섞거나 종합하지 마세요. 영상 제목과 설명에 있는 정보를 우선 사용하고, 설명에 없는 세부 조리법은 필요한 경우 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요.
+  const prompt=`당신은 한국어 레시피 에디터입니다. 반드시 아래 YouTube 영상 자체를 시청·분석한 내용을 기준으로 레시피를 작성하세요. 제목과 설명란만 보고 추측하지 마세요. 영상 속 음성, 자막, 화면에 실제로 등장하는 재료와 양념을 확인하세요.
 음식: ${food}
 옵션: ${selectedStyle()}
 기준 양: 2인분
-유일한 참고 YouTube 영상:
+분석할 유일한 YouTube 영상:
 ${videoContext}
-요구사항:
-1) 제공된 단일 영상의 레시피를 기준으로 작성하세요. '아이들도 먹기 좋은' 옵션이면 해당 영상의 레시피를 바탕으로 맵기와 자극적인 재료만 줄여 조정하고, 다른 영상의 조리법을 가져오지 마세요. '가장 인기 많은' 옵션에서도 이 영상 외의 출처는 참고하지 마세요.
-2) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
-3) 각 조리 단계에 필요한 적절한 시간을 함께 표시하세요. 예: '양파를 볶아 향을 낸다 (2~3분)', '뚜껑을 덮고 익힌다 (약 8분)'. 영상 정보에 조리 시간이 없으면 재료와 조리법에 맞는 현실적인 예상 시간을 제안하되, 영상에서 확인한 사실처럼 단정하지 마세요. 여러 단계의 시간이 겹치면 불필요하게 총 조리 시간을 부풀리지 마세요.\n4) 조리 순서에서도 재료를 넣는 단계마다 재료명과 용량을 다시 명시하세요. 예: '양파 1/2개와 다진 마늘 1큰술을 넣고 2~3분 볶는다.' 필요한 재료 목록의 2인분 기준 용량과 일치시키고, '적당량'처럼 모호하게만 쓰지 마세요. 이미 넣은 재료를 다시 언급할 필요가 없는 단계에서는 억지로 반복하지 않아도 됩니다.\n5) 영상에 없는 정확한 양은 합리적인 2인분 기준으로 제안하되, 특정 영상의 실제 계량이라고 단정하지 마세요. 다른 소개나 결론은 쓰지 마세요.`;
+필수 규칙:
+1) 영상의 시작부터 끝까지 조리 과정을 살펴보고, 말로 언급되거나 화면에 실제로 넣는 모든 재료와 양념을 빠짐없이 추출하세요. 특히 다시다, 맛소금, 설탕, 후추, 조미료처럼 소량이거나 마지막에 추가되는 재료도 놓치지 마세요. 영상에서 재료를 넣는 시점과 순서도 반영하세요.
+2) 영상에서 실제로 확인되는 재료와 일반적인 보완 재료를 구분하세요. 영상에서 확인되지 않는 재료를 영상에 나온 것처럼 만들지 마세요. 양이 명확하지 않으면 '영상에서 양 미확인'이라고 표시하거나 합리적인 2인분 양을 제안하되 추정임을 밝혀 주세요.
+3) '아이들도 먹기 좋은' 옵션이면 영상의 레시피를 바탕으로 맵기와 자극적인 재료만 조정하고, 다른 영상의 조리법은 가져오지 마세요. '가장 인기 많은' 옵션도 이 영상 하나만 사용하세요.
+4) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
+5) 조리 단계마다 재료명과 용량을 명시하고 재료 목록과 일치시키세요. 각 단계에 현실적인 조리 시간을 표시하되 영상에서 확인한 시간인지 추정인지 구분하세요. 다른 소개나 결론은 쓰지 마세요.`;
   let usedModel='gemini-3.8-flash',resp,data;
   const geminiRequest=async model=>{
    let response;
-   try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:5000}})})}
+   try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model,input:[{type:'text',text:prompt},{type:'video',uri:recipeVideo.url}]})})}
    catch(networkErr){throw new Error(describeNetworkError(networkErr))}
    return {response,body:await response.json().catch(()=>({}))};
   };
   const primary=await geminiRequest('gemini-3.8-flash');
   resp=primary.response;data=primary.body;
   if(!resp.ok){
-   const firstError=describeApiError('Gemini API (기본 모델)',resp.status,data);
+   const firstError=describeApiError('Gemini 영상 분석 API (기본 모델)',resp.status,data);
    let fallback;
    try{fallback=await geminiRequest('gemini-3.5-flash-lite')}
    catch(networkErr){throw new Error(firstError+' 대체 모델 연결 실패: '+describeNetworkError(networkErr))}
    resp=fallback.response;data=fallback.body;
-   if(!resp.ok)throw new Error('레시피 생성에 실패했어요.\n기본 모델: '+firstError+'\n대체 모델: '+describeApiError('Gemini API (대체 모델)',resp.status,data));
+   if(!resp.ok)throw new Error('영상 분석에 실패했어요.\\n기본 모델: '+firstError+'\\n대체 모델: '+describeApiError('Gemini 영상 분석 API (대체 모델)',resp.status,data));
    usedModel='gemini-3.5-flash-lite';
   }
-  const candidate=data?.candidates?.[0],answerText=(candidate?.content?.parts||[]).map(p=>p.text||'').join('\\n').trim();
+  const outputParts=Array.isArray(data?.steps)?data.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
+  const answerText=(data?.output_text||outputParts.map(p=>p.text||'').join('\\n')||(Array.isArray(data?.output)?data.output.flatMap(s=>s.content||[]).map(p=>p.text||'').join('\\n'):'')).trim();
   if(!answerText){
-   const block=data?.promptFeedback?.blockReason,finish=candidate?.finishReason;
+   const block=data?.error?.message||data?.status,finish=data?.status;
    if(block)throw new Error('Gemini가 요청을 안전 정책에 따라 차단했어요 ('+block+'). 검색어를 바꾸어 다시 시도해 주세요.');
    if(finish==='MAX_TOKENS')throw new Error('Gemini 응답이 길이 제한으로 중단됐어요. 다시 시도해 주세요.');
    throw new Error('Gemini가 레시피 내용을 반환하지 않았어요. API 사용량과 모델 응답 상태를 확인한 뒤 다시 시도해 주세요.');
@@ -319,7 +322,6 @@ ${videoContext}
   $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[{title:recipeVideo.title,url:recipeVideo.url}];
   [recipeVideo].forEach(v=>{
-   savedSources.push({title:v.title,url:v.url});
    const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';
    a.textContent=v.title+' · '+v.channel;
    const span=document.createElement('span');const date=v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상';span.textContent=date+' · 조회수 '+v.views.toLocaleString('ko-KR')+'회';
@@ -327,7 +329,7 @@ ${videoContext}
   });
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
-  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 제목에 입력한 음식명이 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 선택한 YouTube 영상의 실제 화면과 음성 정보를 바탕으로 레시피를 정리했어요. 영상에서 재료나 양이 명확하지 않은 부분은 추정일 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
