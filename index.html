@@ -254,10 +254,9 @@ form.addEventListener('submit',async e=>{
  const food=$('food').value.trim(),key=getStoredApiKey(),youtubeKey=getStoredYouTubeApiKey();
  if(!food)return;
  if(!key||!youtubeKey){openApiKeyModal();setStatus('Gemini API 키와 YouTube Data API 키를 모두 설정해 주세요.');return}
- const btn=$('searchBtn');btn.disabled=true;btn.textContent='유튜브 검색 중…';result.classList.remove('show');setStatus('유튜브에서 관련 레시피 영상을 찾고 있어요.');
+ const btn=$('searchBtn');btn.disabled=true;btn.textContent='유튜브 검색 중…';result.classList.remove('show');setStatus('입력한 음식명이 제목에 그대로 포함된 영상을 조회수순으로 찾고 있어요.');
  try{
-  const publishedAfter=new Date(Date.now()-365*24*60*60*1000).toISOString();
-  const ytParams=new URLSearchParams({part:'snippet',type:'video',maxResults:'10',order:'viewCount',regionCode:'KR',relevanceLanguage:'ko',publishedAfter,q:food+' 레시피',key:youtubeKey});
+  const ytParams=new URLSearchParams({part:'snippet',type:'video',maxResults:'50',order:'viewCount',regionCode:'KR',relevanceLanguage:'ko',q:food,key:youtubeKey});
   let ytResp,ytData;
   try{ytResp=await fetch('https://www.googleapis.com/youtube/v3/search?'+ytParams.toString())}
   catch(networkErr){throw new Error(describeNetworkError(networkErr))}
@@ -269,16 +268,17 @@ form.addEventListener('submit',async e=>{
    thumbnail:item.snippet?.thumbnails?.medium?.url||item.snippet?.thumbnails?.default?.url||'',
    url:'https://www.youtube.com/watch?v='+item.id.videoId,views:0
   }));
-  if(!videos.length)throw new Error('최근 1년 내 검색된 레시피 영상이 없어요. 다른 음식 이름으로 검색해 보세요.');
+  const exactTitleVideos=videos.filter(v=>v.title.toLocaleLowerCase('ko-KR').includes(food.toLocaleLowerCase('ko-KR')));
+  if(!exactTitleVideos.length)throw new Error('유튜브 영상 제목에 입력한 음식명 "'+food+'"이(가) 그대로 포함된 영상이 없어요. 음식명을 다시 입력해 주세요.');
+  videos.splice(0,videos.length,...exactTitleVideos);
   const ids=videos.map(v=>v.id).join(',');
   try{
    const statResp=await fetch('https://www.googleapis.com/youtube/v3/videos?'+new URLSearchParams({part:'statistics',id:ids,key:youtubeKey}).toString());
    const statData=await statResp.json();
    if(statResp.ok){const stats=new Map((statData.items||[]).map(v=>[v.id,Number(v.statistics?.viewCount||0)]));videos.forEach(v=>v.views=stats.get(v.id)||0);videos.sort((a,b)=>b.views-a.views)}
   }catch(e){}
-  const topVideos=videos.slice(0,5);
-  const recipeVideo=topVideos[0];
-  setStatus('조회수가 가장 높은 영상 1개를 기준으로 Gemini가 레시피를 정리하고 있어요.');
+  const recipeVideo=videos[0];
+  setStatus('제목에 음식명이 정확히 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리하고 있어요.');
   const videoContext='제목: '+recipeVideo.title+'\\n채널: '+recipeVideo.channel+'\\n게시일: '+(recipeVideo.publishedAt?recipeVideo.publishedAt.slice(0,10):'미상')+'\\n조회수: '+recipeVideo.views+'\\n설명: '+recipeVideo.description.slice(0,900)+'\\nURL: '+recipeVideo.url;
   const prompt=`당신은 한국어 레시피 에디터입니다. 아래에 제공된 영상 딱 1개만 레시피의 유일한 출처로 사용하세요. 다른 YouTube 영상이나 다른 출처의 레시피를 섞거나 종합하지 마세요. 영상 제목과 설명에 있는 정보를 우선 사용하고, 설명에 없는 세부 조리법은 필요한 경우 일반적인 요리 지식으로 보완하되 영상에서 직접 확인했다고 주장하지 마세요.
 음식: ${food}
@@ -327,7 +327,7 @@ ${videoContext}
   });
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
-  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 조회수가 가장 높은 YouTube 영상 1개를 기준으로 레시피를 정리했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 제목에 입력한 음식명이 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리했어요. 영상 설명에 없는 세부 내용은 실제 영상과 다를 수 있어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
