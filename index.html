@@ -254,7 +254,7 @@ form.addEventListener('submit',async e=>{
  const food=$('food').value.trim(),key=getStoredApiKey(),youtubeKey=getStoredYouTubeApiKey();
  if(!food)return;
  if(!key||!youtubeKey){openApiKeyModal();setStatus('Gemini API 키와 YouTube Data API 키를 모두 설정해 주세요.');return}
- const btn=$('searchBtn');btn.disabled=true;btn.textContent='유튜브 검색 중…';result.classList.remove('show');setStatus('입력한 음식명이 제목에 그대로 포함된 영상을 조회수순으로 찾고 있어요.');
+ const btn=$('searchBtn');btn.disabled=true;btn.textContent='유튜브 검색 중…';result.classList.remove('show');setStatus('입력한 음식명의 모든 단어가 제목에 포함된 영상을 찾고 있어요.');
  try{
   const ytParams=new URLSearchParams({part:'snippet',type:'video',maxResults:'50',order:'viewCount',regionCode:'KR',relevanceLanguage:'ko',q:food,key:youtubeKey});
   let ytResp,ytData;
@@ -268,8 +268,9 @@ form.addEventListener('submit',async e=>{
    thumbnail:item.snippet?.thumbnails?.medium?.url||item.snippet?.thumbnails?.default?.url||'',
    url:'https://www.youtube.com/watch?v='+item.id.videoId,views:0
   }));
-  const exactTitleVideos=videos.filter(v=>v.title.toLocaleLowerCase('ko-KR').includes(food.toLocaleLowerCase('ko-KR')));
-  if(!exactTitleVideos.length)throw new Error('유튜브 영상 제목에 입력한 음식명 "'+food+'"이(가) 그대로 포함된 영상이 없어요. 음식명을 다시 입력해 주세요.');
+  const searchTerms=food.toLocaleLowerCase('ko-KR').split(/\s+/).filter(Boolean);
+  const exactTitleVideos=videos.filter(v=>{const title=v.title.toLocaleLowerCase('ko-KR');return searchTerms.every(term=>title.includes(term));});
+  if(!exactTitleVideos.length)throw new Error('유튜브 영상 제목에 입력한 음식명의 모든 단어가 포함된 영상이 없어요. 음식명을 다시 입력해 주세요.');
   videos.splice(0,videos.length,...exactTitleVideos);
   const ids=videos.map(v=>v.id).join(',');
   try{
@@ -278,7 +279,7 @@ form.addEventListener('submit',async e=>{
    if(statResp.ok){const stats=new Map((statData.items||[]).map(v=>[v.id,Number(v.statistics?.viewCount||0)]));videos.forEach(v=>v.views=stats.get(v.id)||0);videos.sort((a,b)=>b.views-a.views)}
   }catch(e){}
   const recipeVideo=videos[0];
-  setStatus('제목에 음식명이 정확히 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리하고 있어요.');
+  setStatus('제목에 입력한 음식명의 모든 단어가 포함된 영상 중 조회수가 가장 높은 1개를 기준으로 레시피를 정리하고 있어요.');
   const recipeReferenceVideos=videos.slice(1,4);
   const videoContext='제목: '+recipeVideo.title+'\\n채널: '+recipeVideo.channel+'\\n게시일: '+(recipeVideo.publishedAt?recipeVideo.publishedAt.slice(0,10):'미상')+'\\n조회수: '+recipeVideo.views+'\\n설명: '+recipeVideo.description.slice(0,900)+'\\nURL: '+recipeVideo.url;
   const referenceContext=recipeReferenceVideos.map((v,i)=>'보조 영상 '+(i+1)+': '+v.title+'\\n채널: '+v.channel+'\\n조회수: '+v.views+'\\n설명: '+v.description.slice(0,500)+'\\nURL: '+v.url).join('\\n\\n');
