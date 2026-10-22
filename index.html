@@ -186,7 +186,7 @@ function scaleIngredientText(text,baseServings,targetServings){
  const lines=String(text||'').split(/\r?\n/);
  let inIngredients=false,inCooking=false;
  const ingredientLines=[],steps=[];
- const qtyPattern=/\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g;
+ const qtyPattern=/\d+(?:,\d{3})*(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?/g;
  const esc=value=>escapeHtml(value);
  lines.forEach(line=>{
   if(/필요한\s*재료|🥕/.test(line)&&/재료/.test(line)){inIngredients=true;inCooking=false;return;}
@@ -195,7 +195,7 @@ function scaleIngredientText(text,baseServings,targetServings){
   if(inIngredients){
    const scaled=line.replace(qtyPattern,raw=>{
     const parts=raw.split('/');
-    const value=parts.length===2?Number(parts[0].trim())/Number(parts[1].trim()):Number(raw);
+    const value=parts.length===2?Number(parts[0].replace(/,/g,'').trim())/Number(parts[1].replace(/,/g,'').trim()):Number(raw.replace(/,/g,''));
     return Number.isFinite(value)?formatAmount(value*factor):raw;
    });
    ingredientLines.push(scaled.replace(/^\s*[-•*]\s*/,'').trim());
