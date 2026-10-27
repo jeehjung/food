@@ -303,23 +303,24 @@ ${referenceContext||'보조 영상 없음'}
 5) '아이들도 먹기 좋은' 옵션이면 기준 영상 레시피를 바탕으로 맵기와 자극적인 재료만 조정하세요.
 6) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.
 7) 조리 단계마다 재료명과 용량을 명시하고 재료 목록과 일치시키세요. 현실적인 조리 시간을 표시하되 추정이면 밝혀 주세요. 다른 소개나 결론은 쓰지 마세요.`;
-  let usedModel='gemini-3.8-flash',resp,data;
+  let usedModel='gemini-3.5-flash-lite',resp,data;
+  const llmStartedAt=Date.now();
   const geminiRequest=async model=>{
    let response;
    try{response=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({model,input:[{type:'text',text:prompt},{type:'video',uri:recipeVideo.url},...recipeReferenceVideos.map(v=>({type:'video',uri:v.url}))]})})}
    catch(networkErr){throw new Error(describeNetworkError(networkErr))}
    return {response,body:await response.json().catch(()=>({}))};
   };
-  const primary=await geminiRequest('gemini-3.8-flash');
+  const primary=await geminiRequest('gemini-3.5-flash-lite');
   resp=primary.response;data=primary.body;
   if(!resp.ok){
-   const firstError=describeApiError('Gemini 영상 분석 API (기본 모델)',resp.status,data);
+   const firstError=describeApiError('Gemini 영상 분석 API (Flash-Lite)',resp.status,data);
    let fallback;
-   try{fallback=await geminiRequest('gemini-3.5-flash-lite')}
+   try{fallback=await geminiRequest('gemini-3.8-flash')}
    catch(networkErr){throw new Error(firstError+' 대체 모델 연결 실패: '+describeNetworkError(networkErr))}
    resp=fallback.response;data=fallback.body;
-   if(!resp.ok)throw new Error('영상 분석에 실패했어요.\\n기본 모델: '+firstError+'\\n대체 모델: '+describeApiError('Gemini 영상 분석 API (대체 모델)',resp.status,data));
-   usedModel='gemini-3.5-flash-lite';
+   if(!resp.ok)throw new Error('영상 분석에 실패했어요.\\nFlash-Lite: '+firstError+'\\n대체 모델: '+describeApiError('Gemini 영상 분석 API (Flash)',resp.status,data));
+   usedModel='gemini-3.8-flash';
   }
   const outputParts=Array.isArray(data?.steps)?data.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
   const answerText=(data?.output_text||outputParts.map(p=>p.text||'').join('\\n')||(Array.isArray(data?.output)?data.output.flatMap(s=>s.content||[]).map(p=>p.text||'').join('\\n'):'')).trim();
@@ -329,7 +330,8 @@ ${referenceContext||'보조 영상 없음'}
    if(finish==='MAX_TOKENS')throw new Error('Gemini 응답이 길이 제한으로 중단됐어요. 다시 시도해 주세요.');
    throw new Error('Gemini가 레시피 내용을 반환하지 않았어요. API 사용량과 모델 응답 상태를 확인한 뒤 다시 시도해 주세요.');
   }
-  const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+usedModel;
+  const llmElapsedSeconds=((Date.now()-llmStartedAt)/1000).toFixed(1);
+  const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+usedModel+' · LLM 응답 '+llmElapsedSeconds+'초';
   $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setDisplayedServings(2);$('resultSub').textContent=selectedStyle();$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
   const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=[recipeVideo,...recipeReferenceVideos].map(v=>({title:v.title,url:v.url}));
   [recipeVideo,...recipeReferenceVideos].forEach(v=>{
@@ -340,7 +342,7 @@ ${referenceContext||'보조 영상 없음'}
   });
   const items=readHistory();const newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;
   items.unshift({id:newId,name:food+' 레시피',food,option:selectedStyle(),servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});
-  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! 기준 영상의 레시피를 유지하고, 필요한 경우 보조 영상으로 양과 조리 시간만 추정했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+  writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+usedModel+' 응답 시간 '+llmElapsedSeconds+'초. 기준 영상의 레시피를 유지하고, 필요한 경우 보조 영상으로 양과 조리 시간만 추정했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
  }catch(err){console.error('Recipe API error:',err);setStatus(err?.message||'레시피를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 });;
