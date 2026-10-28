@@ -52,21 +52,21 @@
 <div class="top"><div class="top-actions"><button type="button" class="keytop" id="apiKeyOpen">🔑 <span id="apiKeyBtnText">API Key 설정</span></button><button type="button" class="history-open-btn" id="historyOpen"><span class="history-open-icon" aria-hidden="true">◷</span><span>저장된 레시피 보관함</span></button></div></div>
 
 <section class="panel"><form id="recipeForm"><label for="food">어떤 음식이 궁금하세요?</label><div class="foodrow"><input id="food" placeholder="예: 마라로제 떡볶이, 두바이 초콜릿" required maxlength="100"><button class="primary" id="searchBtn" type="submit">레시피 찾기 ↗</button></div>
-<p class="hint">※ 영상 검색 및 레시피 생성 중에는 브라우저를 켜둔 상태로 유지해 주세요.</p>
+<p class="hint">※ 서버에 작업이 등록된 후에는 브라우저를 닫아도 레시피 생성이 계속됩니다.</p>
 <div class="options"><fieldset class="recipe-style-fieldset"><legend>레시피 옵션</legend><label class="recipe-radio"><input type="radio" name="style" value="아이들도 먹기 좋은" checked><span class="radio-mark"></span><span>아이들도 먹기 좋은</span></label><label class="recipe-radio"><input type="radio" name="style" value="가장 인기 많은"><span class="radio-mark"></span><span>가장 인기 많은</span></label></fieldset></div>
 
 </form>
 </section>
 <div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="deleteNonFavorites" class="history-delete-nonfavorites">즐겨찾기 외 레시피 모두 삭제</button><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🎬 레시피 기준 영상</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
-<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">🔑 Google Gemini API Key 설정</h2><p>Gemini AI 레시피 검색을 사용하려면 API 키가 필요합니다.<br><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Gemini API Key 발급받기 ↗</a></p><label for="apiKeyInput">Gemini API Key</label><input id="apiKeyInput" type="password" placeholder="Gemini API 키" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true"><label for="youtubeApiKeyInput" style="margin-top:12px">YouTube Data API Key</label><input id="youtubeApiKeyInput" type="password" placeholder="YouTube API 키" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true"><p class="hint">YouTube 검색을 위해 별도 API 키가 필요해요. <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">YouTube API Key 발급받기 ↗</a> (YouTube Data API 사용 설정 필요)</p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">저장한 키는 이 브라우저의 localStorage에 보관되어 새로고침 후에도 유지됩니다. 같은 브라우저라도 사이트 주소(도메인)가 다르면 별도로 저장됩니다.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
+<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">☁️ 레시피 서버 설정</h2><p>서버 주소를 설정하면 브라우저를 닫아도 레시피 생성이 계속됩니다. API 키는 Cloudflare 서버 Secret에 설정합니다.</p><label for="serverApiUrlInput">서버 API 주소</label><input id="serverApiUrlInput" type="url" placeholder="https://food-recipe-api.계정명.workers.dev" autocomplete="url" spellcheck="false"><p class="hint">Cloudflare Worker 배포 후 발급된 주소를 입력하세요. 주소 끝의 / 는 생략해도 됩니다.</p><div class="actions"><button class="ghost" type="button" id="serverCheckBtn">서버 연결 확인</button><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">서버 주소만 이 브라우저에 저장됩니다. Gemini와 YouTube API 키는 브라우저에 저장하지 않습니다.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
 </main>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),form=$('recipeForm'),statusBox=$('status'),result=$('result');
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
 function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
-const API_KEY_STORAGE='iuns_recipe_gemini_api_key';
-const YOUTUBE_API_KEY_STORAGE='iuns_recipe_youtube_api_key';
+const SERVER_URL_STORAGE='iuns_recipe_server_url_v1';
+const PENDING_JOB_STORAGE='iuns_recipe_pending_job_v1';
 const HISTORY_STORAGE='iuns_recipe_history_v1';
 let historyFilter='all';
 let activeHistoryId=null;
@@ -94,15 +94,16 @@ function describeNetworkError(err){
  if(err instanceof TypeError)return 'Google API에 연결하지 못했어요. 인터넷 연결을 확인하고, 브라우저의 네트워크 차단이나 확장 프로그램이 요청을 막는지 확인해 주세요.';
  return err?.message||'알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
 }
-function getStoredApiKey(){try{return localStorage.getItem(API_KEY_STORAGE)||''}catch(e){return ''}}
-function getStoredYouTubeApiKey(){try{return localStorage.getItem(YOUTUBE_API_KEY_STORAGE)||''}catch(e){return ''}}
-function updateApiKeyUI(){updateStorageUsage();const hasKey=!!getStoredApiKey().trim()&&!!getStoredYouTubeApiKey().trim();$('apiKeyBtnText').textContent=hasKey?'API 키 설정됨':'API 키 설정';$('apiKeyOpen').classList.toggle('set',hasKey)}
-function openApiKeyModal(){$('apiKeyInput').value=getStoredApiKey();$('youtubeApiKeyInput').value=getStoredYouTubeApiKey();$('apiKeyModal').classList.add('show');$('apiKeyInput').focus()}
+function getStoredServerUrl(){try{return (localStorage.getItem(SERVER_URL_STORAGE)||'').trim().replace(/\\/$/,'')}catch(e){return ''}}
+function updateApiKeyUI(){updateStorageUsage();const hasUrl=!!getStoredServerUrl();$('apiKeyBtnText').textContent=hasUrl?'서버 설정됨':'서버 설정';$('apiKeyOpen').classList.toggle('set',hasUrl)}
+function openApiKeyModal(){$('serverApiUrlInput').value=getStoredServerUrl();$('apiKeyModal').classList.add('show');$('serverApiUrlInput').focus()}
 function closeApiKeyModal(){$('apiKeyModal').classList.remove('show')}
-function saveApiKey(){const value=$('apiKeyInput').value.trim(),youtubeValue=$('youtubeApiKeyInput').value.trim();try{if(value)localStorage.setItem(API_KEY_STORAGE,value);else localStorage.removeItem(API_KEY_STORAGE);if(youtubeValue)localStorage.setItem(YOUTUBE_API_KEY_STORAGE,youtubeValue);else localStorage.removeItem(YOUTUBE_API_KEY_STORAGE);updateApiKeyUI();closeApiKeyModal();setStatus(value&&youtubeValue?'Gemini 및 YouTube API 키를 저장했어요.':'API 키 설정을 저장했어요. YouTube 검색에는 두 키가 모두 필요해요.')}catch(e){setStatus('브라우저 저장 공간에 접근할 수 없어요. 브라우저 설정을 확인해 주세요.')}}
+function saveApiKey(){const value=$('serverApiUrlInput').value.trim().replace(/\\/$/,'');if(value){try{const u=new URL(value);if(u.protocol!=='https:')throw new Error('HTTPS 주소를 입력해 주세요.');localStorage.setItem(SERVER_URL_STORAGE,u.origin+u.pathname.replace(/\\/$/,''));}catch(e){setStatus('올바른 HTTPS 서버 주소를 입력해 주세요.');return}}else{localStorage.removeItem(SERVER_URL_STORAGE)}updateApiKeyUI();closeApiKeyModal();setStatus(value?'서버 주소를 저장했어요. 서버 연결 확인 버튼으로 연결 상태를 확인해 주세요.':'서버 주소를 지웠어요. 레시피 생성 전에 서버 주소를 설정해야 합니다.')}
+async function checkServerConnection(){const input=$('serverApiUrlInput'),value=input.value.trim().replace(/\\/$/,'');if(!value){setStatus('먼저 서버 API 주소를 입력해 주세요.');return}let base;try{base=new URL(value);if(base.protocol!=='https:')throw new Error()}catch(e){setStatus('올바른 HTTPS 서버 주소를 입력해 주세요.');return}const btn=$('serverCheckBtn');btn.disabled=true;btn.textContent='확인 중…';try{const response=await fetch(base.origin+base.pathname.replace(/\\/$/,'')+'/api/health',{cache:'no-store'});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||'HTTP '+response.status);setStatus('서버 연결에 성공했어요. 주소를 저장하면 사용할 수 있습니다.')}catch(e){setStatus('서버 연결 실패: 주소, 배포 상태 및 ALLOWED_ORIGINS 설정을 확인해 주세요.')}finally{btn.disabled=false;btn.textContent='서버 연결 확인'}}
 $('apiKeyOpen').addEventListener('click',openApiKeyModal);
 $('apiKeyCancel').addEventListener('click',closeApiKeyModal);
 $('apiKeySave').addEventListener('click',saveApiKey);
+$('serverCheckBtn').addEventListener('click',checkServerConnection);
 $('apiKeyModal').addEventListener('click',e=>{if(e.target===$('apiKeyModal'))closeApiKeyModal()});
 $('historyOpen').addEventListener('click',openHistoryModal);
 $('historyClose').addEventListener('click',closeHistoryModal);
@@ -250,15 +251,59 @@ function showSavedRecipe(item){
  if(!list.children.length){const p=document.createElement('p');p.className='empty';p.textContent='저장된 참고 출처가 없습니다.';list.appendChild(p)}
  result.classList.add('show');setStatus('저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'})
 }
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function renderCompletedRecipe(recipe){
+ const food=recipe.food||'레시피',style=recipe.style||'가장 인기 많은',answerText=recipe.text||'',sources=Array.isArray(recipe.sources)?recipe.sources:[];
+ if(!answerText)throw new Error('서버가 레시피 결과를 반환하지 않았습니다.');
+ const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+(recipe.model||'서버 분석')+' · LLM 응답 '+(recipe.elapsedSeconds??'-')+'초';
+ $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setSelectedStyle(style);setDisplayedServings(2);$('resultSub').textContent=style;$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
+ const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=sources.map(v=>({title:v.title,url:v.url}));
+ sources.forEach(v=>{const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=v.title+' · '+(v.channel||'YouTube');const span=document.createElement('span');span.textContent=(v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상')+' · 조회수 '+Number(v.views||0).toLocaleString('ko-KR')+'회';a.appendChild(span);sourceList.appendChild(a)});
+ const items=readHistory(),newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:style,servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+(recipe.model||'Gemini')+' 응답 시간 '+(recipe.elapsedSeconds??'-')+'초. 레시피를 브라우저 보관함에 저장했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function pollRecipeJob(id,food,style,button){
+ const base=getStoredServerUrl();if(!base)throw new Error('서버 API 주소가 설정되지 않았습니다.');
+ const started=Date.now();let lastStatus='';
+ while(Date.now()-started<30*60*1000){
+  const response=await fetch(base+'/api/jobs/'+encodeURIComponent(id),{cache:'no-store'});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'작업 상태 조회에 실패했습니다 (HTTP '+response.status+').');
+  if(data.status!==lastStatus){lastStatus=data.status;if(data.status==='queued')setStatus('서버 대기열에 등록됐어요. 브라우저를 닫아도 작업은 계속됩니다.');else if(data.status==='running')setStatus('서버에서 YouTube 검색 및 Gemini 레시피 분석 중입니다. 브라우저를 닫아도 괜찮아요.');}
+  if(data.status==='completed'){localStorage.removeItem(PENDING_JOB_STORAGE);renderCompletedRecipe(data.result);return}
+  if(data.status==='failed'){localStorage.removeItem(PENDING_JOB_STORAGE);throw new Error(data.error||'레시피 생성에 실패했습니다.')}
+  if(data.status!=='queued'&&data.status!=='running')throw new Error('알 수 없는 작업 상태입니다: '+data.status);
+  await sleep(2500);
+ }
+ throw new Error('작업 상태 확인 시간이 초과됐습니다. 저장된 작업은 서버에서 계속 진행될 수 있습니다. 다시 접속해 상태를 확인하세요.');
+}
 form.addEventListener('submit',async e=>{
  e.preventDefault();
- const food=$('food').value.trim(),key=getStoredApiKey(),youtubeKey=getStoredYouTubeApiKey();
+ const food=$('food').value.trim(),style=selectedStyle(),base=getStoredServerUrl();
  if(!food)return;
- if(!key||!youtubeKey){openApiKeyModal();setStatus('Gemini API 키와 YouTube Data API 키를 모두 설정해 주세요.');return}
- const btn=$('searchBtn');btn.disabled=true;btn.textContent='유튜브 검색 중…';result.classList.remove('show');setStatus('입력한 음식명의 모든 단어가 제목에 포함된 영상을 찾고 있어요.');
+ if(!base){openApiKeyModal();setStatus('먼저 Cloudflare 서버 API 주소를 설정해 주세요.');return}
+ const btn=$('searchBtn');btn.disabled=true;btn.textContent='서버에 등록 중…';result.classList.remove('show');
  try{
-  const ytParams=new URLSearchParams({part:'snippet',type:'video',maxResults:'50',order:'viewCount',regionCode:'KR',relevanceLanguage:'ko',q:food,key:youtubeKey});
-  let ytResp,ytData;
+  let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style})})}catch(err){throw new Error('서버에 연결하지 못했습니다. 서버 주소와 배포 상태를 확인하세요.')}
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'작업 등록 실패 (HTTP '+response.status+').');
+  localStorage.setItem(PENDING_JOB_STORAGE,JSON.stringify({id:data.id,food,style,submittedAt:Date.now()}));
+  setStatus('작업이 서버에 등록됐어요. 브라우저를 닫아도 레시피 생성이 계속됩니다.');
+  await pollRecipeJob(data.id,food,style,btn);
+ }catch(err){console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
+ finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
+});
+async function resumePendingRecipeJob(){
+ let pending;try{pending=JSON.parse(localStorage.getItem(PENDING_JOB_STORAGE)||'null')}catch(e){pending=null}
+ if(!pending?.id)return;
+ const base=getStoredServerUrl();if(!base){setStatus('진행 중이던 작업이 있습니다. 서버 주소를 설정하면 상태를 다시 확인할 수 있습니다.');return}
+ $('food').value=pending.food||'';
+ if(pending.style)setSelectedStyle(pending.style);
+ const btn=$('searchBtn');btn.disabled=true;btn.textContent='작업 확인 중…';setStatus('이전에 요청한 레시피 작업 상태를 서버에서 확인하고 있습니다.');
+ try{await pollRecipeJob(pending.id,pending.food,pending.style,btn)}
+ catch(err){console.error('Resume recipe job error:',err);setStatus(err?.message||'이전 작업 상태를 확인하지 못했습니다.')}
+ finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
+}
+setTimeout(()=>{resumePendingRecipeJob()},0);let ytResp,ytData;
   try{ytResp=await fetch('https://www.googleapis.com/youtube/v3/search?'+ytParams.toString())}
   catch(networkErr){throw new Error(describeNetworkError(networkErr))}
   ytData=await ytResp.json().catch(()=>({}));
