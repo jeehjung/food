@@ -74,13 +74,13 @@ async function callGemini(model, prompt, primary, references, apiKey) {
   });
   return {response,data:await response.json().catch(()=>({}))};
 }
-async function generateRecipe(food, style, env) {
+async function generateRecipe(food, style, env, geminiApiKey = env.GEMINI_API_KEY) {
   const videos=await searchVideos(food,env.YOUTUBE_API_KEY),primary=videos[0],references=videos.slice(1,4);
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
-  let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,env.GEMINI_API_KEY);
+  let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,geminiApiKey);
   if (!result.response.ok) {
     const firstError=errorMessage("Gemini Flash-Lite",result.response.status,result.data);
-    result=await callGemini("gemini-3.8-flash",prompt,primary,references,env.GEMINI_API_KEY);
+    result=await callGemini("gemini-3.8-flash",prompt,primary,references,geminiApiKey);
     if (!result.response.ok) throw new Error(firstError+" 대체 모델도 실패했습니다. "+errorMessage("Gemini 대체 모델",result.response.status,result.data));
     model="gemini-3.8-flash";
   }
@@ -104,8 +104,10 @@ async function handleRequest(request,env) {
   const url=new URL(request.url);
   if (request.method==="GET"&&url.pathname==="/api/health") return json({ok:true,service:"food-recipe-api"},200,origin);
   if (request.method==="POST"&&url.pathname==="/api/jobs") {
-    if (!env.GEMINI_API_KEY||!env.YOUTUBE_API_KEY) return json({error:"GEMINI_API_KEY와 YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
+    if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
     let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
+    const geminiApiKey=String(body?.geminiApiKey||env.GEMINI_API_KEY||"").trim();
+    if (!geminiApiKey) return json({error:"Gemini API 키를 브라우저 설정에 입력하세요."},400,origin);
     const food=String(body?.food||"").trim(),style=body?.style==="아이들도 먹기 좋은"?"아이들도 먹기 좋은":"가장 인기 많은";
     if (!food||food.length>MAX_FOOD_LENGTH) return json({error:"음식명은 1~"+MAX_FOOD_LENGTH+"자여야 합니다."},400,origin);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown",now=Math.floor(Date.now()/1000);
@@ -127,7 +129,7 @@ async function handleRequest(request,env) {
       }
       return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
     }
-    try {await env.RECIPE_QUEUE.send({id,food,style,createdAt:now});}
+    try {await env.RECIPE_QUEUE.send({id,food,style,geminiApiKey,createdAt:now});}
     catch (_) {await updateJob(env.DB,id,"failed",{errorMessage:"Queue에 작업을 등록하지 못했습니다. Cloudflare Queue 설정을 확인하세요."});return json({error:"작업 대기열 등록 실패. 서버 Queue 설정을 확인하세요."},503,origin);}
     return json({id,status:"queued",food,createdAt:now},202,origin);
   }
@@ -149,7 +151,7 @@ export default {
       const job=message.body;
       try {
         await updateJob(env.DB,job.id,"running");
-        const result=await generateRecipe(job.food,job.style,env);
+        const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY);
         await updateJob(env.DB,job.id,"completed",{resultJson:JSON.stringify(result)});
       } catch (error) {
         console.error("Recipe job failed",job.id,error);
