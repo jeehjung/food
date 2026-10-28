@@ -49,7 +49,7 @@
 .recipe-radio:has(input:checked){color:var(--accent)}
 </style></head>
 <body><main>
-<div class="top"><div class="top-actions"><button type="button" class="keytop" id="apiSettingsOpen">Gemini API 키 설정</button><button type="button" class="history-open-btn" id="historyOpen"><span class="history-open-icon" aria-hidden="true">◷</span><span>저장된 레시피 보관함</span></button></div></div>
+<div class="top"><div class="top-actions"><button type="button" class="keytop" id="apiSettingsOpen">Gemini API 키 입력 필요</button><button type="button" class="history-open-btn" id="historyOpen"><span class="history-open-icon" aria-hidden="true">◷</span><span>저장된 레시피 보관함</span></button></div></div>
 
 <section class="panel"><form id="recipeForm"><label for="food">어떤 음식이 궁금하세요?</label><div class="foodrow"><input id="food" placeholder="예: 마라로제 떡볶이, 두바이 초콜릿" required maxlength="100"><button class="primary" id="searchBtn" type="submit">레시피 찾기 ↗</button></div>
 <p class="hint">※ 서버에 작업이 등록된 후에는 브라우저를 닫아도 레시피 생성이 계속됩니다.</p>
@@ -58,7 +58,7 @@
 </form>
 </section>
 <div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="deleteNonFavorites" class="history-delete-nonfavorites">즐겨찾기 외 레시피 모두 삭제</button><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🎬 레시피 기준 영상</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
-<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">☁️ 레시피 API 설정</h2><p>Gemini API 키는 이 브라우저에 저장됩니다. 레시피 요청 때 Cloudflare Worker로 전송되어 Queue를 거쳐 Gemini에 사용됩니다.</p><label for="geminiApiKeyInput">Gemini API 키</label><input id="geminiApiKeyInput" type="password" placeholder="Google AI Studio API key" autocomplete="off" spellcheck="false"><p class="hint">키는 이 브라우저에 저장되며 다른 브라우저나 기기에는 공유되지 않습니다. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 Gemini API 키 발급</a></p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">키는 이 브라우저에 저장되며, 요청 처리 중 Cloudflare Queue에 포함될 수 있어 Cloudflare 서비스 운영자에게 보일 수 있습니다. 키를 삭제하려면 입력란을 비우고 저장하세요.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
+<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">☁️ 레시피 API 설정</h2><p>Gemini API 키는 이 브라우저에 저장됩니다. 레시피 요청 때 Cloudflare Worker로 전송되어 Queue를 거쳐 Gemini에 사용됩니다.</p><label for="geminiApiKeyInput">Gemini API 키</label><input id="geminiApiKeyInput" type="password" placeholder="Google AI Studio API key" autocomplete="off" spellcheck="false"><p class="hint"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 Gemini API 키 발급</a></p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">키는 이 브라우저에 저장되며, 요청 처리 중 Cloudflare Queue에 포함될 수 있어 Cloudflare 서비스 운영자에게 보일 수 있습니다. 키를 삭제하려면 입력란을 비우고 저장하세요.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
 </main>
 <script>
 'use strict';
@@ -97,7 +97,7 @@ function describeNetworkError(err){
 }
 function getStoredServerUrl(){return DEFAULT_SERVER_URL}
 function getStoredGeminiApiKey(){try{return (localStorage.getItem(GEMINI_KEY_STORAGE)||'').trim()}catch(e){return ''}}
-function updateApiKeyUI(){updateStorageUsage();}
+function updateApiKeyUI(){const button=$('apiSettingsOpen'),hasKey=!!getStoredGeminiApiKey();if(button){button.textContent=hasKey?'Gemini API 키 입력됨':'Gemini API 키 입력 필요';button.classList.toggle('set',hasKey)}updateStorageUsage();}
 function openApiKeyModal(){$('geminiApiKeyInput').value=getStoredGeminiApiKey();$('apiKeyModal').classList.add('show');$('geminiApiKeyInput').focus()}
 function closeApiKeyModal(){$('apiKeyModal').classList.remove('show')}
 function saveApiKey(){const key=$('geminiApiKeyInput').value.trim();try{if(key)localStorage.setItem(GEMINI_KEY_STORAGE,key);else localStorage.removeItem(GEMINI_KEY_STORAGE)}catch(e){setStatus('브라우저에 API 키를 저장할 수 없습니다. 브라우저 저장소 설정을 확인해 주세요.');return}updateApiKeyUI();closeApiKeyModal();setStatus(key?'Gemini API 키를 이 브라우저에 저장했어요.':'Gemini API 키를 삭제했어요. 새 레시피 요청 전에 키를 입력해 주세요.')}
@@ -303,4 +303,5 @@ async function resumePendingRecipeJob(){
  catch(err){console.error('Resume recipe job error:',err);setStatus(err?.message||'이전 작업 상태를 확인하지 못했습니다.')}
  finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
 }
+updateApiKeyUI();
 setTimeout(()=>{resumePendingRecipeJob()},0);</script></body></html>
