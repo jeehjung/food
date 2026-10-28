@@ -1,7 +1,7 @@
 const ALLOWED_METHODS = "GET,POST,OPTIONS";
 const MAX_FOOD_LENGTH = 100;
 const JOB_TTL_SECONDS = 24 * 60 * 60;
-const HOURLY_JOB_LIMIT = 5;
+const HOURLY_JOB_LIMIT = 10;
 
 function json(data, status = 200, origin = "") {
   return new Response(JSON.stringify(data), { status, headers: {
@@ -109,12 +109,24 @@ async function handleRequest(request,env) {
     const food=String(body?.food||"").trim(),style=body?.style==="아이들도 먹기 좋은"?"아이들도 먹기 좋은":"가장 인기 많은";
     if (!food||food.length>MAX_FOOD_LENGTH) return json({error:"음식명은 1~"+MAX_FOOD_LENGTH+"자여야 합니다."},400,origin);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown",now=Math.floor(Date.now()/1000);
-    const recent=await env.DB.prepare("SELECT COUNT(*) AS count FROM jobs WHERE request_ip=? AND created_at>?").bind(ip,now-3600).first();
-    if (Number(recent?.count||0)>=HOURLY_JOB_LIMIT) return json({error:"IP별 시간당 최대 "+HOURLY_JOB_LIMIT+"회까지 요청할 수 있습니다."},429,origin);
-    const active=await env.DB.prepare("SELECT COUNT(*) AS count FROM jobs WHERE request_ip=? AND status IN ('queued','running')").bind(ip).first();
-    if (Number(active?.count||0)>=2) return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
     const id=crypto.randomUUID();
-    await env.DB.prepare("INSERT INTO jobs (id,food,style,status,request_ip,created_at,updated_at) VALUES (?,?,?,'queued',?,?,?)").bind(id,food,style,ip,now,now).run();
+    const admission=await env.DB.prepare(
+      "INSERT INTO jobs (id,food,style,status,request_ip,created_at,updated_at) " +
+      "SELECT ?,?,?, 'queued',?,?,? " +
+      "WHERE (SELECT COUNT(*) FROM jobs WHERE request_ip=? AND " +
+      "((status='completed' AND updated_at>?) OR (status IN ('queued','running') AND created_at>?)))<? " +
+      "AND (SELECT COUNT(*) FROM jobs WHERE request_ip=? AND status IN ('queued','running'))<2"
+    ).bind(id,food,style,ip,now,now,ip,now-3600,now-3600,HOURLY_JOB_LIMIT,ip).run();
+    if (Number(admission.meta?.changes||0)!==1) {
+      const recent=await env.DB.prepare(
+        "SELECT COUNT(*) AS count FROM jobs WHERE request_ip=? AND " +
+        "((status='completed' AND updated_at>?) OR (status IN ('queued','running') AND created_at>?))"
+      ).bind(ip,now-3600,now-3600).first();
+      if (Number(recent?.count||0)>=HOURLY_JOB_LIMIT) {
+        return json({error:"IP별 시간당 최대 "+HOURLY_JOB_LIMIT+"회까지 요청할 수 있습니다."},429,origin);
+      }
+      return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
+    }
     try {await env.RECIPE_QUEUE.send({id,food,style,createdAt:now});}
     catch (_) {await updateJob(env.DB,id,"failed",{errorMessage:"Queue에 작업을 등록하지 못했습니다. Cloudflare Queue 설정을 확인하세요."});return json({error:"작업 대기열 등록 실패. 서버 Queue 설정을 확인하세요."},503,origin);}
     return json({id,status:"queued",food,createdAt:now},202,origin);
