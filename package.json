@@ -1,0 +1,14 @@
+{
+  "name": "food-recipe-worker",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "db:init:local": "wrangler d1 execute food-recipe-jobs --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute food-recipe-jobs --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}
