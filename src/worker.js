@@ -16,12 +16,28 @@ function corsOrigin(request, env) {
   return allowed.includes(origin) ? origin : "";
 }
 function errorMessage(service, status, body) {
-  const detail = body?.error?.message || body?.message || body?.status || "";
-  if (status === 429) return service + " API 사용 한도 또는 요청 횟수를 초과했습니다.";
-  if (status === 401 || status === 403) return service + " API 접근이 거부되었습니다. 서버 Secret과 API 권한을 확인하세요.";
-  if (status === 404) return service + " 모델 또는 API 주소를 찾을 수 없습니다. 모델 이름을 확인하세요.";
-  if (status >= 500) return service + " 서버 오류입니다. 잠시 후 다시 시도하세요.";
-  return service + " 요청 실패 (HTTP " + status + ")" + (detail ? ": " + String(detail).slice(0, 300) : "");
+  const error = body?.error || body || {};
+  const detail = String(error.message || body?.message || error.status || body?.status || "");
+  const reasons = (Array.isArray(error.errors) ? error.errors : []).map(item => String(item.reason || item.message || "")).join(" ");
+  const code = String(error.status || body?.status || "");
+  const info = (detail + " " + reasons + " " + code).toLowerCase();
+  const quotaSignals = [
+    "quotaexceeded", "dailylimitexceeded", "ratelimitexceeded", "resource_exhausted",
+    "resource exhausted", "quota", "rate limit", "rate_limit", "requests per day",
+    "per day limit", "daily limit", "free tier", "free_tier"
+  ];
+  if (status === 429 || quotaSignals.some(signal => info.includes(signal))) {
+    return service + " 무료 사용량(할당량) 또는 요청 한도를 초과했습니다. " +
+      "Google API 사용량/한도를 확인하고, 한도가 초기화된 뒤 다시 시도하거나 결제·사용 등급 설정을 확인해 주세요.";
+  }
+  if (status === 401) return service + " API 키가 유효하지 않습니다. Cloudflare 서버 Secret을 확인해 주세요.";
+  if (status === 403) {
+    return service + " API 접근이 거부되었습니다. API 키 권한, API 활성화 및 키 제한을 확인해 주세요." +
+      (detail ? " (상세: " + detail.slice(0, 250) + ")" : "");
+  }
+  if (status === 404) return service + " 모델 또는 API 주소를 찾을 수 없습니다. 모델 이름과 API 설정을 확인해 주세요.";
+  if (status >= 500) return service + " 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  return service + " 요청 실패 (HTTP " + status + ")" + (detail ? ": " + detail.slice(0, 300) : "");
 }
 async function searchVideos(food, apiKey) {
   const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:food,key:apiKey});
