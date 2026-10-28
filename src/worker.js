@@ -125,7 +125,14 @@ export default {
         await updateJob(env.DB,job.id,"completed",{resultJson:JSON.stringify(result)});
       } catch (error) {
         console.error("Recipe job failed",job.id,error);
-        await updateJob(env.DB,job.id,"failed",{errorMessage:String(error?.message||"레시피 생성 실패").slice(0,1000)});
+        const detail=String(error?.message||"레시피 생성 실패");
+        const transient=/서버 오류|fetch|network|timeout|timed out/i.test(detail);
+        if (transient && Number(message.attempts||1)<3) {
+          await updateJob(env.DB,job.id,"queued");
+          message.retry({delaySeconds:30});
+          continue;
+        }
+        await updateJob(env.DB,job.id,"failed",{errorMessage:detail.slice(0,1000)});
       }
       message.ack();
     }
