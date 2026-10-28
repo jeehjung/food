@@ -95,7 +95,7 @@ function describeNetworkError(err){
  return err?.message||'알 수 없는 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
 }
 function getStoredServerUrl(){try{return (localStorage.getItem(SERVER_URL_STORAGE)||'').trim().replace(/\/$/,'')}catch(e){return ''}}
-function updateApiKeyUI(){updateStorageUsage();const hasUrl=!!getStoredServerUrl();$('apiKeyBtnText').textContent=hasUrl?'서버 설정됨':'서버 설정';$('apiKeyOpen').classList.toggle('set',hasUrl)}
+function updateApiKeyUI(){try{localStorage.removeItem('iuns_recipe_gemini_api_key');localStorage.removeItem('iuns_recipe_youtube_api_key')}catch(e){}updateStorageUsage();const hasUrl=!!getStoredServerUrl();$('apiKeyBtnText').textContent=hasUrl?'서버 설정됨':'서버 설정';$('apiKeyOpen').classList.toggle('set',hasUrl)}
 function openApiKeyModal(){$('serverApiUrlInput').value=getStoredServerUrl();$('apiKeyModal').classList.add('show');$('serverApiUrlInput').focus()}
 function closeApiKeyModal(){$('apiKeyModal').classList.remove('show')}
 function saveApiKey(){const value=$('serverApiUrlInput').value.trim().replace(/\/$/,'');if(value){try{const u=new URL(value);if(u.protocol!=='https:')throw new Error('HTTPS 주소를 입력해 주세요.');localStorage.setItem(SERVER_URL_STORAGE,u.origin+u.pathname.replace(/\/$/,''));}catch(e){setStatus('올바른 HTTPS 서버 주소를 입력해 주세요.');return}}else{localStorage.removeItem(SERVER_URL_STORAGE)}updateApiKeyUI();closeApiKeyModal();setStatus(value?'서버 주소를 저장했어요. 서버 연결 확인 버튼으로 연결 상태를 확인해 주세요.':'서버 주소를 지웠어요. 레시피 생성 전에 서버 주소를 설정해야 합니다.')}
