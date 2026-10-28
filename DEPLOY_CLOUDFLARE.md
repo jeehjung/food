@@ -60,6 +60,6 @@ npx wrangler deploy
 ## 운영 및 보안 참고
 
 - D1의 작업 상태와 레시피 결과는 생성 시점부터 약 24시간 후 정리됩니다. 브라우저 보관함은 기존처럼 localStorage를 사용합니다.
-- Worker는 IP별 시간당 최대 5회, 동시에 대기/진행 작업 최대 2개로 제한합니다. 공개 API를 완전히 인증하는 장치는 아니므로 공개 배포 전 Cloudflare WAF/Rate Limiting 또는 Turnstile 추가를 권장합니다.
+- Worker는 IP별 최근 1시간 기준 성공한 레시피 생성 최대 10회, 동시에 대기/진행 작업 최대 2개로 제한합니다. 대기 중인 작업은 한도 초과를 막기 위한 임시 예약이며, 실패한 작업은 성공 횟수에 포함되지 않습니다. 공개 API를 완전히 인증하는 장치는 아니므로 공개 배포 전 Cloudflare WAF/Rate Limiting 또는 Turnstile 추가를 권장합니다.
 - CORS는 브라우저의 교차 출처 요청을 제한하지만 단독으로 API 보안을 보장하지 않습니다.
 - Gemini 모델 이름 및 Interactions API의 YouTube URL 영상 입력 지원 여부는 실제 환경에서 테스트해야 합니다.
