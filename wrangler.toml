@@ -9,7 +9,7 @@ ALLOWED_ORIGINS = "https://jeehjung.github.io"
 [[d1_databases]]
 binding = "DB"
 database_name = "food-recipe-jobs"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "7f192050-d082-434f-b087-9dd6b92b2f07"
 
 [[queues.producers]]
 binding = "RECIPE_QUEUE"
