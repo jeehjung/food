@@ -1,0 +1,26 @@
+name = "food-recipe-api"
+main = "src/worker.js"
+compatibility_date = "2026-10-28"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://jeehjung.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "food-recipe-jobs"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[queues.producers]]
+binding = "RECIPE_QUEUE"
+queue = "food-recipe-jobs"
+
+[[queues.consumers]]
+queue = "food-recipe-jobs"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 2
+dead_letter_queue = "food-recipe-dead-letter"
+
+[triggers]
+crons = ["0 * * * *"]
