@@ -109,7 +109,7 @@ async function callGemini(model, prompt, primary, references, apiKey, deadlineAt
 async function generateRecipe(food, style, env, geminiApiKey) {
   const videos=await searchVideos(food,env.YOUTUBE_API_KEY),primary=videos[0],references=videos.slice(1,4);
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
-  // The 2-minute deadline starts only when Gemini generation begins, not when the browser submits the job.
+  // Only Gemini generation has a 2-minute deadline. Queue wait, YouTube lookup, browser inactivity,\n  // and /api/jobs polling do not consume this timeout.
   const deadlineAt=Date.now()+JOB_TIMEOUT_SECONDS*1000;
   let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
   if (!result.response.ok) {
