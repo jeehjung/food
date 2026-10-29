@@ -179,6 +179,17 @@ async function handleRequest(request,env) {
     catch (_) {await updateJob(env.DB,id,"failed",{errorMessage:"Queue에 작업을 등록하지 못했습니다. Cloudflare Queue 설정을 확인하세요."});return json({error:"작업 대기열 등록 실패. 서버 Queue 설정을 확인하세요."},503,origin);}
     return json({id,status:"queued",food,createdAt:now},202,origin);
   }
+  const cancelMatch=url.pathname.match(/^\/api\/jobs\/([0-9a-f-]{36})\/cancel$/i);
+  if (request.method==="POST"&&cancelMatch) {
+    const id=cancelMatch[1];
+    const existing=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(id).first();
+    if (!existing) return json({error:"작업을 찾을 수 없거나 보관 기간이 지났습니다."},404,origin);
+    if (existing.status==="completed") return json({status:"completed",message:"이미 완료된 작업입니다."},200,origin);
+    if (existing.status==="failed"||existing.status==="cancelled") return json({status:existing.status,message:"작업이 이미 종료되었습니다."},200,origin);
+    await env.DB.prepare("UPDATE jobs SET status='cancelled',updated_at=?,error_message=? WHERE id=? AND status IN ('queued','running')")
+      .bind(Math.floor(Date.now()/1000),"사용자가 레시피 생성을 중지했습니다.",id).run();
+    return json({id,status:"cancelled",message:"레시피 생성 작업을 중지했습니다."},200,origin);
+  }
   const match=url.pathname.match(/^\/api\/jobs\/([0-9a-f-]{36})$/i);
   if (request.method==="GET"&&match) {
     let row=await env.DB.prepare("SELECT id,food,style,status,result_json,error_message,created_at,updated_at FROM jobs WHERE id=?").bind(match[1]).first();
@@ -202,6 +213,11 @@ export default {
       const createdAt=Number(job.createdAt)||Math.floor(Date.now()/1000);
       const deadlineAt=(createdAt+JOB_TIMEOUT_SECONDS)*1000;
       try {
+        const current=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(job.id).first();
+        if (!current || current.status==="cancelled" || current.status==="failed" || current.status==="completed") {
+          message.ack();
+          continue;
+        }
         if (Date.now()>=deadlineAt) {
           await failExpiredJob(env.DB,job.id);
           message.ack();
@@ -209,6 +225,11 @@ export default {
         }
         await updateJob(env.DB,job.id,"running");
         const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY,deadlineAt);
+        const afterGeneration=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(job.id).first();
+        if (!afterGeneration || afterGeneration.status==="cancelled") {
+          message.ack();
+          continue;
+        }
         if (Date.now()>=deadlineAt) {
           await updateJob(env.DB,job.id,"failed",{errorMessage:JOB_TIMEOUT_ERROR});
           message.ack();
