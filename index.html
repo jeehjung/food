@@ -64,7 +64,6 @@
 'use strict';
 const $=id=>document.getElementById(id),form=$('recipeForm'),statusBox=$('status'),result=$('result');
 let activeJobId=null, cancelRequested=false;
-let activeJobId=null, cancelRequested=false;
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
 function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
 const GEMINI_KEY_STORAGE='iuns_recipe_gemini_api_key_v1';
@@ -320,7 +319,7 @@ form.addEventListener('submit',async e=>{
   setStatus('작업이 서버에 등록됐어요. 브라우저를 닫아도 레시피 생성이 계속됩니다.');
   await pollRecipeJob(data.id,food,style,btn);
  }catch(err){console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
- finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗'}
+ finally{btn.disabled=false;btn.textContent='레시피 찾기 ↗';activeJobId=null;$('cancelJobBtn').classList.remove('show')}
 });
 async function resumePendingRecipeJob(){
  let pending;try{pending=JSON.parse(localStorage.getItem(PENDING_JOB_STORAGE)||'null')}catch(e){pending=null}
