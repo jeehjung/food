@@ -49,7 +49,12 @@ function errorMessage(service, status, body) {
   return service + " 요청 실패 (HTTP " + status + ")" + (detail ? ": " + detail.slice(0, 300) : "");
 }
 function jobTimeoutError() { return new Error(JOB_TIMEOUT_ERROR); }
-async function fetchJsonBeforeDeadline(url, options, deadlineAt) {
+async function fetchJsonBeforeDeadline(url, options, deadlineAt = null) {
+  if (deadlineAt == null) {
+    const response = await fetch(url, options);
+    const data = await response.json().catch(() => ({}));
+    return {response,data};
+  }
   const remaining = deadlineAt - Date.now();
   if (remaining <= 0) throw jobTimeoutError();
   const controller = new AbortController();
@@ -69,9 +74,9 @@ async function fetchJsonBeforeDeadline(url, options, deadlineAt) {
     clearTimeout(timer);
   }
 }
-async function searchVideos(food, apiKey, deadlineAt) {
+async function searchVideos(food, apiKey) {
   const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:food,key:apiKey});
-  const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/search?" + params, {}, deadlineAt);
+  const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/search?" + params, {});
   if (!response.ok) throw new Error(errorMessage("YouTube Data API", response.status, data));
   let videos = (data.items || []).filter(x => x.id?.videoId).map(x => ({
     id:x.id.videoId,title:x.snippet?.title || "제목 없음",description:x.snippet?.description || "",
@@ -82,7 +87,7 @@ async function searchVideos(food, apiKey, deadlineAt) {
   videos = videos.filter(v => { const title=v.title.toLocaleLowerCase("ko-KR"); return terms.every(term => title.includes(term)); });
   if (!videos.length) throw new Error("유튜브 영상 제목에 입력한 음식명의 모든 단어가 포함된 영상이 없습니다. 음식명을 바꾸어 다시 시도하세요.");
   try {
-    const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {}, deadlineAt);
+    const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
     if (statsResponse.ok) {
       const stats = new Map((statsData.items || []).map(v => [v.id, Number(v.statistics?.viewCount || 0)]));
       videos.forEach(v => { v.views=stats.get(v.id)||0; }); videos.sort((a,b)=>b.views-a.views);
@@ -101,9 +106,11 @@ async function callGemini(model, prompt, primary, references, apiKey, deadlineAt
     body:JSON.stringify({model,input:[{type:"text",text:prompt},{type:"video",uri:primary.url},...references.map(v=>({type:"video",uri:v.url}))]})
   }, deadlineAt);
 }
-async function generateRecipe(food, style, env, geminiApiKey, deadlineAt) {
-  const videos=await searchVideos(food,env.YOUTUBE_API_KEY,deadlineAt),primary=videos[0],references=videos.slice(1,4);
+async function generateRecipe(food, style, env, geminiApiKey) {
+  const videos=await searchVideos(food,env.YOUTUBE_API_KEY),primary=videos[0],references=videos.slice(1,4);
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
+  // The 2-minute deadline starts only when Gemini generation begins, not when the browser submits the job.
+  const deadlineAt=Date.now()+JOB_TIMEOUT_SECONDS*1000;
   let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
   if (!result.response.ok) {
     const firstError=errorMessage("Gemini Flash-Lite",result.response.status,result.data);
@@ -123,21 +130,11 @@ async function generateRecipe(food, style, env, geminiApiKey, deadlineAt) {
   return {food,style,text,sources:[primary,...references].map(v=>({title:v.title,url:v.url,channel:v.channel,publishedAt:v.publishedAt,views:v.views})),model,elapsedSeconds:Number(((Date.now()-started)/1000).toFixed(1))};
 }
 async function updateJob(db,id,status,fields={}) {
-  const now=Math.floor(Date.now()/1000),isCompleted=status==="completed";
-  const statement=db.prepare(
+  const now=Math.floor(Date.now()/1000);
+  return await db.prepare(
     "UPDATE jobs SET status=?,updated_at=?,result_json=COALESCE(?,result_json),error_message=COALESCE(?,error_message) " +
-    "WHERE id=? AND status IN ('queued','running')" + (isCompleted?" AND created_at>?":"")
-  );
-  return isCompleted
-    ? await statement.bind(status,now,fields.resultJson??null,fields.errorMessage??null,id,now-JOB_TIMEOUT_SECONDS).run()
-    : await statement.bind(status,now,fields.resultJson??null,fields.errorMessage??null,id).run();
-}
-async function failExpiredJob(db,id) {
-  const now=Math.floor(Date.now()/1000),cutoff=now-JOB_TIMEOUT_SECONDS;
-  await db.prepare(
-    "UPDATE jobs SET status='failed',updated_at=?,error_message=? " +
-    "WHERE id=? AND status IN ('queued','running') AND created_at<=?"
-  ).bind(now,JOB_TIMEOUT_ERROR,id,cutoff).run();
+    "WHERE id=? AND status IN ('queued','running')"
+  ).bind(status,now,fields.resultJson??null,fields.errorMessage??null,id).run();
 }
 async function handleRequest(request,env) {
   const origin=corsOrigin(request,env),requestOrigin=request.headers.get("Origin")||"";
@@ -194,10 +191,6 @@ async function handleRequest(request,env) {
   if (request.method==="GET"&&match) {
     let row=await env.DB.prepare("SELECT id,food,style,status,result_json,error_message,created_at,updated_at FROM jobs WHERE id=?").bind(match[1]).first();
     if (!row) return json({error:"작업을 찾을 수 없거나 보관 기간이 지났습니다."},404,origin);
-    if ((row.status==="queued"||row.status==="running")&&Number(row.created_at)<=Math.floor(Date.now()/1000)-JOB_TIMEOUT_SECONDS) {
-      await failExpiredJob(env.DB,row.id);
-      row=await env.DB.prepare("SELECT id,food,style,status,result_json,error_message,created_at,updated_at FROM jobs WHERE id=?").bind(match[1]).first();
-    }
     return json({id:row.id,food:row.food,style:row.style,status:row.status,result:row.result_json?JSON.parse(row.result_json):null,error:row.error_message||null,createdAt:row.created_at,updatedAt:row.updated_at},200,origin);
   }
   return json({error:"요청한 API 경로가 없습니다."},404,origin);
@@ -210,43 +203,30 @@ export default {
   async queue(batch,env) {
     for (const message of batch.messages) {
       const job=message.body;
-      const createdAt=Number(job.createdAt)||Math.floor(Date.now()/1000);
-      const deadlineAt=(createdAt+JOB_TIMEOUT_SECONDS)*1000;
       try {
         const current=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(job.id).first();
         if (!current || current.status==="cancelled" || current.status==="failed" || current.status==="completed") {
           message.ack();
           continue;
         }
-        if (Date.now()>=deadlineAt) {
-          await failExpiredJob(env.DB,job.id);
-          message.ack();
-          continue;
-        }
         await updateJob(env.DB,job.id,"running");
-        const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY,deadlineAt);
+        const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY);
         const afterGeneration=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(job.id).first();
         if (!afterGeneration || afterGeneration.status==="cancelled") {
           message.ack();
           continue;
         }
-        if (Date.now()>=deadlineAt) {
-          await updateJob(env.DB,job.id,"failed",{errorMessage:JOB_TIMEOUT_ERROR});
-          message.ack();
-          continue;
-        }
-        const completed=await updateJob(env.DB,job.id,"completed",{resultJson:JSON.stringify(result)});
-        if (Number(completed.meta?.changes||0)!==1) await failExpiredJob(env.DB,job.id);
+        await updateJob(env.DB,job.id,"completed",{resultJson:JSON.stringify(result)});
       } catch (error) {
         console.error("Recipe job failed",job.id,error);
         const detail=String(error?.message||"레시피 생성 실패");
         const transient=/서버 오류|fetch|network|timeout|timed out/i.test(detail);
-        if (transient && Number(message.attempts||1)<3 && Date.now()<deadlineAt) {
+        if (detail!==JOB_TIMEOUT_ERROR && transient && Number(message.attempts||1)<3) {
           await updateJob(env.DB,job.id,"queued");
           message.retry({delaySeconds:30});
           continue;
         }
-        await updateJob(env.DB,job.id,"failed",{errorMessage:(Date.now()>=deadlineAt?JOB_TIMEOUT_ERROR:detail).slice(0,1000)});
+        await updateJob(env.DB,job.id,"failed",{errorMessage:detail.slice(0,1000)});
       }
       message.ack();
     }
