@@ -17,20 +17,27 @@ function corsOrigin(request, env) {
   const allowed = String(env.ALLOWED_ORIGINS || "https://jeehjung.github.io").split(",").map(x => x.trim()).filter(Boolean);
   return allowed.includes(origin) ? origin : "";
 }
+function isQuotaError(status, body) {
+  const error = body?.error || body || {};
+  const detail = String(error.message || body?.message || error.status || body?.status || "");
+  const reasons = (Array.isArray(error.errors) ? error.errors : []).map(item => String(item.reason || item.message || "")).join(" ");
+  const code = String(error.status || body?.status || "");
+  const info = (detail + " " + reasons + " " + code).toLowerCase();
+  return status === 429 || [
+    "quotaexceeded", "dailylimitexceeded", "ratelimitexceeded", "resource_exhausted",
+    "resource exhausted", "quota", "rate limit", "rate_limit", "requests per day",
+    "per day limit", "daily limit", "free tier", "free_tier", "billing"
+  ].some(signal => info.includes(signal));
+}
 function errorMessage(service, status, body) {
   const error = body?.error || body || {};
   const detail = String(error.message || body?.message || error.status || body?.status || "");
   const reasons = (Array.isArray(error.errors) ? error.errors : []).map(item => String(item.reason || item.message || "")).join(" ");
   const code = String(error.status || body?.status || "");
   const info = (detail + " " + reasons + " " + code).toLowerCase();
-  const quotaSignals = [
-    "quotaexceeded", "dailylimitexceeded", "ratelimitexceeded", "resource_exhausted",
-    "resource exhausted", "quota", "rate limit", "rate_limit", "requests per day",
-    "per day limit", "daily limit", "free tier", "free_tier"
-  ];
-  if (status === 429 || quotaSignals.some(signal => info.includes(signal))) {
+  if (isQuotaError(status, body)) {
     return service + " 무료 사용량(할당량) 또는 요청 한도를 초과했습니다. " +
-      "Google API 사용량/한도를 확인하고, 한도가 초기화된 뒤 다시 시도하거나 결제·사용 등급 설정을 확인해 주세요.";
+      "Google AI Studio의 API 사용량/한도와 결제 설정을 확인해 주세요. 사용량이 초기화되거나 한도가 조정된 뒤 다시 시도해 주세요.";
   }
   if (status === 401) return service + " API 키가 유효하지 않습니다. Cloudflare 서버 Secret을 확인해 주세요.";
   if (status === 403) {
@@ -100,8 +107,14 @@ async function generateRecipe(food, style, env, geminiApiKey, deadlineAt) {
   let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
   if (!result.response.ok) {
     const firstError=errorMessage("Gemini Flash-Lite",result.response.status,result.data);
+    // Quota/rate-limit failures are account/key usage problems, so retrying another model only wastes time.
+    if (isQuotaError(result.response.status,result.data)) throw new Error(firstError);
     result=await callGemini("gemini-3.8-flash",prompt,primary,references,geminiApiKey,deadlineAt);
-    if (!result.response.ok) throw new Error(firstError+" 대체 모델도 실패했습니다. "+errorMessage("Gemini 대체 모델",result.response.status,result.data));
+    if (!result.response.ok) {
+      const fallbackError=errorMessage("Gemini 대체 모델",result.response.status,result.data);
+      if (isQuotaError(result.response.status,result.data)) throw new Error(fallbackError);
+      throw new Error(firstError+" 대체 모델도 실패했습니다. "+fallbackError);
+    }
     model="gemini-3.8-flash";
   }
   const d=result.data,parts=Array.isArray(d?.steps)?d.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
