@@ -285,7 +285,7 @@ async function pollRecipeJob(id,food,style,button){
   if(data.status!==lastStatus){lastStatus=data.status;if(data.status==='queued'){setStatus('서버 등록 완료. 레시피 생성 대기 중');button.textContent='서버 등록 완료. 레시피 생성중'}else if(data.status==='running'){setStatus('서버 등록 완료. 레시피 생성중');button.textContent='서버 등록 완료. 레시피 생성중'}}
   if(data.status==='completed'){localStorage.removeItem(PENDING_JOB_STORAGE);renderCompletedRecipe(data.result);return}
   if(data.status==='failed'){localStorage.removeItem(PENDING_JOB_STORAGE);throw new Error(data.error||'레시피 생성에 실패했습니다.')}
-   if(data.status==='cancelled'){localStorage.removeItem(PENDING_JOB_STORAGE);throw new Error(data.error||'레시피 생성 작업이 중지되었습니다.')}
+   if(data.status==='cancelled'){localStorage.removeItem(PENDING_JOB_STORAGE);if(cancelRequested)return;throw new Error(data.error||'레시피 생성 작업이 중지되었습니다.')}
   if(data.status!=='queued'&&data.status!=='running')throw new Error('알 수 없는 작업 상태입니다: '+data.status);
   await sleep(2500);
  }
