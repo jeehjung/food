@@ -2,7 +2,7 @@ const ALLOWED_METHODS = "GET,POST,OPTIONS";
 const MAX_FOOD_LENGTH = 100;
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 const JOB_TIMEOUT_SECONDS = 120;
-const JOB_TIMEOUT_ERROR = "2분 안에 레시피 결과를 받지 못해 작업을 실패 처리했습니다. 다시 시도해 주세요.";
+const JOB_TIMEOUT_ERROR = "Gemini가 레시피 생성을 시작한 뒤 2분 안에 결과를 반환하지 않아 작업을 실패 처리했습니다. 다시 시도해 주세요.";
 const HOURLY_JOB_LIMIT = 10;
 
 function json(data, status = 200, origin = "") {
