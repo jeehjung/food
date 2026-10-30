@@ -3,7 +3,6 @@ const MAX_FOOD_LENGTH = 100;
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 const JOB_TIMEOUT_SECONDS = 120;
 const JOB_TIMEOUT_ERROR = "Gemini API가 생성 요청 후 2분 안에 응답하지 않아 실패 처리했습니다. 브라우저 대기 시간이나 Worker 상태 조회 시간은 이 제한에 포함되지 않습니다.";
-const HOURLY_JOB_LIMIT = 10;
 
 function json(data, status = 200, origin = "") {
   return new Response(JSON.stringify(data), { status, headers: {
@@ -168,18 +167,9 @@ async function handleRequest(request,env) {
     const admission=await env.DB.prepare(
       "INSERT INTO jobs (id,food,style,status,request_ip,created_at,updated_at) " +
       "SELECT ?,?,?, 'queued',?,?,? " +
-      "WHERE (SELECT COUNT(*) FROM jobs WHERE request_ip=? AND " +
-      "((status='completed' AND updated_at>?) OR (status IN ('queued','running') AND created_at>?)))<? " +
-      "AND (SELECT COUNT(*) FROM jobs WHERE request_ip=? AND status IN ('queued','running'))<2"
-    ).bind(id,food,style,ip,now,now,ip,now-3600,now-3600,HOURLY_JOB_LIMIT,ip).run();
+      "WHERE (SELECT COUNT(*) FROM jobs WHERE request_ip=? AND status IN ('queued','running'))<2"
+    ).bind(id,food,style,ip,now,now,ip).run();
     if (Number(admission.meta?.changes||0)!==1) {
-      const recent=await env.DB.prepare(
-        "SELECT COUNT(*) AS count FROM jobs WHERE request_ip=? AND " +
-        "((status='completed' AND updated_at>?) OR (status IN ('queued','running') AND created_at>?))"
-      ).bind(ip,now-3600,now-3600).first();
-      if (Number(recent?.count||0)>=HOURLY_JOB_LIMIT) {
-        return json({error:"IP별 시간당 최대 "+HOURLY_JOB_LIMIT+"회까지 요청할 수 있습니다."},429,origin);
-      }
       return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
     }
     try {await env.RECIPE_QUEUE.send({id,food,style,videoIndex,geminiApiKey,createdAt:now});}
