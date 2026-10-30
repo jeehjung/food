@@ -120,7 +120,7 @@ async function callGemini(model, prompt, primary, apiKey, deadlineAt) {
 }
 async function generateRecipe(food, style, env, geminiApiKey, videoIndex = 0) {
   const videos=await searchVideos(food,env.YOUTUBE_API_KEY);
-  const selectedIndex=Math.max(0,Math.min(2,Number(videoIndex)||0));
+  const selectedIndex=Math.max(0,Math.min(49,Math.floor(Number(videoIndex)||0)));
   const primary=videos[selectedIndex],references=[];
   if (!primary) throw new Error("검색 조건에 맞는 영상이 "+(selectedIndex+1)+"번째까지 없습니다. 다른 검색어로 시도해 주세요.");
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
