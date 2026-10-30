@@ -38,7 +38,7 @@
 
 .result-serving{max-width:300px;margin:0 0 18px}.answer .recipe-ingredients{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .recipe-ingredients td{border:0;padding:5px 4px;vertical-align:top}.answer .recipe-ingredients .ingredient-number{width:34px;text-align:center;font-variant-numeric:tabular-nums;font-weight:750}.answer .recipe-ingredients .ingredient-name{text-align:left;overflow-wrap:anywhere}.answer .recipe-ingredients .ingredient-amount{width:34%;text-align:left;overflow-wrap:anywhere}.answer .cooking-table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px}.answer .cooking-table td{border:0;padding:5px 4px;vertical-align:top}.answer .cooking-table .step-number{width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:750}.answer .cooking-table .step-text{text-align:left;overflow-wrap:anywhere}.serving-stepper{display:flex;align-items:center;gap:12px}.serving-step{width:44px;height:44px;padding:0;border-radius:14px;background:#f1f5f9;color:#334155;font-size:24px;display:flex;align-items:center;justify-content:center}.serving-step:hover:not(:disabled){background:#e0e7ff;color:#4338ca}.serving-step:disabled{opacity:.35;cursor:not-allowed}.serving-stepper output{min-width:76px;text-align:center;font-size:18px;font-weight:900;color:#1e293b}
 
-.recipe-style-fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-wrap:wrap;gap:10px 18px}
+.recipe-style-fieldset:disabled{opacity:.45;cursor:not-allowed}.recipe-style-fieldset:disabled .recipe-radio{cursor:not-allowed}.recipe-style-fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-wrap:wrap;gap:10px 18px}
 .recipe-style-fieldset legend{display:block;font-size:14px;font-weight:750;margin:0 0 9px;padding:0}
 .recipe-radio{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:600;cursor:pointer}
 .recipe-radio input{position:absolute;opacity:0;width:1px;height:1px}
@@ -53,7 +53,7 @@
 
 <section class="panel"><form id="recipeForm"><label for="food">어떤 음식이 궁금하세요?</label><div class="foodrow"><input id="food" placeholder="예: 마라로제 떡볶이, 두바이 초콜릿" required maxlength="100"><div class="job-actions"><button class="primary" id="searchBtn" type="submit">레시피 찾기 ↗</button><button type="button" id="stopBtn">중지</button></div></div>
 <p class="hint">※ 서버에 작업이 등록된 후에는 브라우저를 닫아도 레시피 생성이 계속됩니다.</p>
-<div class="options"><fieldset class="recipe-style-fieldset"><legend>레시피 옵션</legend><label class="recipe-radio"><input type="radio" name="style" value="아이들도 먹기 좋은" checked><span class="radio-mark"></span><span>아이들도 먹기 좋은</span></label><label class="recipe-radio"><input type="radio" name="style" value="가장 인기 많은"><span class="radio-mark"></span><span>가장 인기 많은</span></label></fieldset></div>
+<div class="options"><fieldset class="recipe-style-fieldset" id="recipeOptions"><legend>레시피 옵션</legend><label class="recipe-radio"><input type="radio" name="style" value="아이들도 먹기 좋은" checked><span class="radio-mark"></span><span>아이들도 먹기 좋은</span></label><label class="recipe-radio"><input type="radio" name="style" value="가장 인기 많은"><span class="radio-mark"></span><span>가장 인기 많은</span></label></fieldset></div>
 
 </form>
 </section>
@@ -66,6 +66,7 @@ const $=id=>document.getElementById(id),form=$('recipeForm'),statusBox=$('status
 let activeJobId=null, cancelRequested=false, activeRequestToken=0;
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
 function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
+function setRecipeOptionsDisabled(disabled){const options=$('recipeOptions');if(options)options.disabled=!!disabled;}
 const GEMINI_KEY_STORAGE='iuns_recipe_gemini_api_key_v1';
 const DEFAULT_SERVER_URL='https://food-recipe-api.jeeh.workers.dev';
 const PENDING_JOB_STORAGE='iuns_recipe_pending_job_v1';
@@ -308,7 +309,7 @@ async function stopCurrentRecipe(){
  activeJobId=null;cancelRequested=true;activeRequestToken++;
  localStorage.removeItem(PENDING_JOB_STORAGE);
  $('stopBtn').classList.remove('show');
- const btn=$('searchBtn');btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;
+ const btn=$('searchBtn');btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;setRecipeOptionsDisabled(false);
  setStatus('현재 레시피 요청을 중지했습니다. 새 검색을 시작할 수 있습니다.');
  // Mark the server-side job cancelled without waiting; the UI is immediately ready for a new request.
  fetch(base+'/api/jobs/'+encodeURIComponent(id)+'/cancel',{method:'POST'})
@@ -327,7 +328,7 @@ form.addEventListener('submit',async e=>{
  if(activeJobId)await stopCurrentRecipe();
  const requestToken=++activeRequestToken;
  const btn=$('searchBtn'),stopBtn=$('stopBtn');
- btn.disabled=true;btn.textContent='서버에 등록 중…';$('againBtn').disabled=true;$('food').disabled=true;stopBtn.classList.remove('show');
+ btn.disabled=true;btn.textContent='서버에 등록 중…';$('againBtn').disabled=true;$('food').disabled=true;stopBtn.classList.remove('show');setRecipeOptionsDisabled(true);
  result.classList.remove('show');
  try{
   let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style,videoIndex,geminiApiKey})})}catch(err){throw new Error('서버에 연결하지 못했습니다. Worker 배포 상태를 확인하세요.')}
@@ -340,7 +341,7 @@ form.addEventListener('submit',async e=>{
  }catch(err){
   if(requestToken===activeRequestToken){updateAgainButton();console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
  }finally{
-  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;updateAgainButton();}
+  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;updateAgainButton();setRecipeOptionsDisabled(false);}
  }
 });
 async function resumePendingRecipeJob(){
@@ -349,10 +350,10 @@ async function resumePendingRecipeJob(){
  const base=getStoredServerUrl();if(!base){setStatus('진행 중이던 작업이 있습니다. 서버 주소를 설정하면 상태를 다시 확인할 수 있습니다.');return}
  $('food').value=pending.food||'';
  if(pending.style)setSelectedStyle(pending.style);
- const btn=$('searchBtn');btn.disabled=true;btn.textContent='레시피 생성중';$('food').disabled=true;$('stopBtn').classList.add('show');activeJobId=pending.id;cancelRequested=false;const requestToken=++activeRequestToken;setStatus('',false);
+ setRecipeOptionsDisabled(true);const btn=$('searchBtn');btn.disabled=true;btn.textContent='레시피 생성중';$('food').disabled=true;$('stopBtn').classList.add('show');activeJobId=pending.id;cancelRequested=false;const requestToken=++activeRequestToken;setStatus('',false);
  try{await pollRecipeJob(pending.id,pending.food,pending.style,btn,requestToken)}
  catch(err){console.error('Resume recipe job error:',err);setStatus(err?.message||'이전 작업 상태를 확인하지 못했습니다.')}
- finally{if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;$('stopBtn').classList.remove('show');activeJobId=null}}
+ finally{if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;$('stopBtn').classList.remove('show');activeJobId=null;setRecipeOptionsDisabled(false)}}
 }
 async function loadLatestUpdate(){
  const el=$('latestUpdate');
