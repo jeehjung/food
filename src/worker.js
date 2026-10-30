@@ -84,7 +84,7 @@ async function searchVideos(food, apiKey) {
     url:"https://www.youtube.com/watch?v=" + x.id.videoId,views:0
   }));
   // 검색어와 영상 제목의 공백을 제거한 뒤 비교해 붙여쓰기/띄어쓰기를 모두 허용합니다.
-  const normalizedFood = food.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
+  const searchTerms = food.toLocaleLowerCase("ko-KR").split(/\s+/).filter(Boolean);
   videos = videos.filter(v => {
     const normalizedTitle = v.title.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
     return normalizedTitle.includes(normalizedFood);
