@@ -87,7 +87,7 @@ async function searchVideos(food, apiKey) {
   const searchTerms = food.toLocaleLowerCase("ko-KR").split(/\s+/).filter(Boolean);
   videos = videos.filter(v => {
     const normalizedTitle = v.title.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
-    return normalizedTitle.includes(normalizedFood);
+    return searchTerms.every(term => normalizedTitle.includes(term.replace(/\s+/g, "")));
   });
   if (!videos.length) throw new Error("유튜브 영상 제목에 입력한 음식명의 모든 단어가 포함된 영상이 없습니다. 음식명을 바꾸어 다시 시도하세요.");
   try {
