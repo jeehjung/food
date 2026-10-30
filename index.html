@@ -65,10 +65,27 @@
 const $=id=>document.getElementById(id),form=$('recipeForm'),statusBox=$('status'),result=$('result');
 let activeJobId=null, cancelRequested=false, activeRequestToken=0;
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
-function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
+const STYLE_STORAGE='iuns_recipe_style_preference_v1';
+function setSelectedStyle(value){
+ const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');
+ if(radio){
+  radio.checked=true;
+  try{localStorage.setItem(STYLE_STORAGE,radio.value)}catch(e){}
+ }
+}
+function restoreSelectedStyle(){
+ try{
+  const saved=localStorage.getItem(STYLE_STORAGE);
+  if(saved)setSelectedStyle(saved);
+ }catch(e){}
+}
+document.querySelectorAll('input[name="style"]').forEach(radio=>{
+ radio.addEventListener('change',()=>{if(radio.checked){try{localStorage.setItem(STYLE_STORAGE,radio.value)}catch(e){}}});
+});
+restoreSelectedStyle();
 function setRecipeOptionsDisabled(disabled){const options=$('recipeOptions');if(options)options.disabled=!!disabled;}
 const GEMINI_KEY_STORAGE='iuns_recipe_gemini_api_key_v1';
-const DEFAULT_SERVER_URL='https://food-recipe-api.jeeh.workers.dev';
+const DEFAULT_SERVER_URL='https://food-recipe-api-dev.jeeh.workers.dev';
 const PENDING_JOB_STORAGE='iuns_recipe_pending_job_v1';
 const HISTORY_STORAGE='iuns_recipe_history_v1';
 let historyFilter='all';
