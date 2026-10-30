@@ -74,6 +74,8 @@ let historyFilter='all';
 let activeHistoryId=null;
 let currentBaseText='';
 let currentBaseServings=2;
+let currentVideoIndex=0,requestedVideoIndex=0,alternateRequestPending=false;
+function updateAgainButton(){const button=$('againBtn');if(!button)return;const remaining=Math.max(0,2-currentVideoIndex);button.disabled=remaining===0;button.textContent=remaining?`다른 영상으로 레시피 만들기 (남은 ${remaining}회)`:'다른 영상으로 다시 찾기 완료';}
 function setStatus(msg,show=true){statusBox.textContent=msg;statusBox.classList.toggle('show',show)}
 function describeApiError(service,status,data){
  const err=data?.error||data||{},detail=String(err.message||err.status||'').trim();
@@ -112,7 +114,7 @@ $('historyFooterClose').addEventListener('click',closeHistoryModal);
 $('deleteNonFavorites').addEventListener('click',()=>{const items=readHistory();const favorites=items.filter(item=>item.favorite);const removeCount=items.length-favorites.length;if(!removeCount){alert('삭제할 레시피가 없어요. 모든 레시피가 즐겨찾기에 등록되어 있습니다.');return}if(!confirm('즐겨찾기되지 않은 레시피 '+removeCount+'개를 모두 삭제할까요? 즐겨찾기 레시피는 유지됩니다.'))return;writeHistory(favorites);renderHistory();if(activeHistoryId&&!favorites.some(item=>String(item.id)===String(activeHistoryId))){activeHistoryId=null}setStatus('즐겨찾기 레시피 '+favorites.length+'개를 유지하고 나머지 '+removeCount+'개를 삭제했어요.');});
 $('historyModal').addEventListener('click',e=>{if(e.target===$('historyModal'))closeHistoryModal()});
 
-$('againBtn').addEventListener('click',()=>form.requestSubmit());
+$('againBtn').addEventListener('click',()=>{if(currentVideoIndex>=2)return;requestedVideoIndex=currentVideoIndex+1;alternateRequestPending=true;form.requestSubmit()});
 function getDisplayedServings(){return Number($('resultServings').dataset.value||2)}
 function setDisplayedServings(value){
  const target=Math.max(1,Math.min(20,Math.round(Number(value)||2)));
@@ -246,6 +248,7 @@ $('historyList').addEventListener('click',e=>{
 function showSavedRecipe(item){
  $('food').value=item.food||item.name||'';setSelectedStyle(item.option||'가장 인기 많은');
  currentBaseText=item.text||'';currentBaseServings=Number(item.baseServings||item.servings||2);activeHistoryId=item.id;setDisplayedServings(Number(item.servings||currentBaseServings||2));
+ currentVideoIndex=Math.max(0,Math.min(2,Number(item.videoIndex)||0));updateAgainButton();
  $('resultTitle').textContent=item.name||((item.food||'레시피')+' 레시피');$('resultSub').textContent=item.option||'';$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,Number(item.servings||currentBaseServings||2));
  const list=$('sourceList');list.replaceChildren();
  (item.sources||[]).slice(0,1).forEach(s=>{if(!s.url)return;const a=document.createElement('a');a.className='source';a.href=s.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=s.title||s.url;const span=document.createElement('span');try{span.textContent=new URL(s.url).hostname}catch{span.textContent='웹 출처'}a.appendChild(span);list.appendChild(a)});
@@ -257,10 +260,10 @@ function renderCompletedRecipe(recipe){
  const food=recipe.food||'레시피',style=recipe.style||'가장 인기 많은',answerText=recipe.text||'',sources=Array.isArray(recipe.sources)?recipe.sources:[];
  if(!answerText)throw new Error('서버가 레시피 결과를 반환하지 않았습니다.');
  const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 버전: '+(recipe.model||'서버 분석')+' · LLM 응답 '+(recipe.elapsedSeconds??'-')+'초';
- $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;setSelectedStyle(style);setDisplayedServings(2);$('resultSub').textContent=style;$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
+ $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;currentVideoIndex=Math.max(0,Math.min(2,Number(recipe.videoIndex)||0));updateAgainButton();setSelectedStyle(style);setDisplayedServings(2);$('resultSub').textContent=style;$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=sources.map(v=>({title:v.title,url:v.url}));
  sources.forEach(v=>{const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=v.title+' · '+(v.channel||'YouTube');const span=document.createElement('span');span.textContent=(v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상')+' · 조회수 '+Number(v.views||0).toLocaleString('ko-KR')+'회';a.appendChild(span);sourceList.appendChild(a)});
- const items=readHistory(),newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:style,servings:2,baseServings:2,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+(recipe.model||'Gemini')+' 응답 시간 '+(recipe.elapsedSeconds??'-')+'초. 레시피를 브라우저 보관함에 저장했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
+ const items=readHistory(),newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:style,servings:2,baseServings:2,videoIndex:currentVideoIndex,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+(recipe.model||'Gemini')+' 응답 시간 '+(recipe.elapsedSeconds??'-')+'초. 레시피를 브라우저 보관함에 저장했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function pollRecipeJob(id,food,style,button,requestToken){
  const base=getStoredServerUrl();if(!base)throw new Error('Worker 주소를 확인할 수 없습니다.');
@@ -317,7 +320,8 @@ $('stopBtn').addEventListener('click',stopCurrentRecipe);
 
 form.addEventListener('submit',async e=>{
  e.preventDefault();
- const food=$('food').value.trim(),style=selectedStyle(),base=getStoredServerUrl(),geminiApiKey=getStoredGeminiApiKey();
+ const food=$('food').value.trim(),style=selectedStyle(),base=getStoredServerUrl(),geminiApiKey=getStoredGeminiApiKey(),videoIndex=alternateRequestPending?requestedVideoIndex:0;
+ alternateRequestPending=false;
  if(!food)return;
  if(!geminiApiKey){openApiKeyModal();setStatus('먼저 Gemini API 키를 설정해 주세요.');return}
  if(activeJobId)await stopCurrentRecipe();
@@ -326,15 +330,15 @@ form.addEventListener('submit',async e=>{
  btn.disabled=true;btn.textContent='서버에 등록 중…';$('food').disabled=true;stopBtn.classList.remove('show');
  result.classList.remove('show');
  try{
-  let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style,geminiApiKey})})}catch(err){throw new Error('서버에 연결하지 못했습니다. Worker 배포 상태를 확인하세요.')}
+  let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style,videoIndex,geminiApiKey})})}catch(err){throw new Error('서버에 연결하지 못했습니다. Worker 배포 상태를 확인하세요.')}
   const data=await response.json().catch(()=>({}));
   if(requestToken!==activeRequestToken)return;
   if(!response.ok)throw new Error(data.error||'작업 등록 실패 (HTTP '+response.status+').');
-  localStorage.setItem(PENDING_JOB_STORAGE,JSON.stringify({id:data.id,food,style,submittedAt:Date.now()}));
+  localStorage.setItem(PENDING_JOB_STORAGE,JSON.stringify({id:data.id,food,style,videoIndex,submittedAt:Date.now()}));
   activeJobId=data.id;cancelRequested=false;btn.disabled=true;btn.textContent='레시피 생성중';$('food').disabled=true;stopBtn.classList.add('show');setStatus('',false);
   await pollRecipeJob(data.id,food,style,btn,requestToken);
  }catch(err){
-  if(requestToken===activeRequestToken){console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
+  if(requestToken===activeRequestToken){updateAgainButton();console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
  }finally{
   if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;}
  }
@@ -358,11 +362,10 @@ async function loadLatestUpdate(){
   if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
   const commit=await response.json();
   const updatedAt=commit?.commit?.committer?.date||commit?.commit?.author?.date;
-  const commitName=commit?.commit?.message?.split('\n')[0]?.trim();
   if(!updatedAt)throw new Error('Commit date unavailable');
   const date=new Date(updatedAt);
   const formattedDate=date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-  el.textContent='Latest update: '+formattedDate+(commitName?' ('+commitName+')':'');
+  el.textContent='Latest update: '+formattedDate;
  }catch(error){
   el.textContent='Latest update: 확인할 수 없음';
   console.warn('Latest update 조회 실패:',error);
