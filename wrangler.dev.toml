@@ -24,3 +24,20 @@ dead_letter_queue = "food-recipe-dead-letter-dev"
 
 [triggers]
 crons = ["0 * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
+
+[observability.issue_detection]
+enabled = false
