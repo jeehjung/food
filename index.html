@@ -305,7 +305,7 @@ async function stopCurrentRecipe(){
  activeJobId=null;cancelRequested=true;activeRequestToken++;
  localStorage.removeItem(PENDING_JOB_STORAGE);
  $('stopBtn').classList.remove('show');
- const btn=$('searchBtn');btn.disabled=false;btn.textContent='레시피 찾기 ↗';
+ const btn=$('searchBtn');btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;
  setStatus('현재 레시피 요청을 중지했습니다. 새 검색을 시작할 수 있습니다.');
  // Mark the server-side job cancelled without waiting; the UI is immediately ready for a new request.
  fetch(base+'/api/jobs/'+encodeURIComponent(id)+'/cancel',{method:'POST'})
@@ -323,7 +323,7 @@ form.addEventListener('submit',async e=>{
  if(activeJobId)await stopCurrentRecipe();
  const requestToken=++activeRequestToken;
  const btn=$('searchBtn'),stopBtn=$('stopBtn');
- btn.disabled=true;btn.textContent='서버에 등록 중…';stopBtn.classList.remove('show');
+ btn.disabled=true;btn.textContent='서버에 등록 중…';$('food').disabled=true;stopBtn.classList.remove('show');
  result.classList.remove('show');
  try{
   let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style,geminiApiKey})})}catch(err){throw new Error('서버에 연결하지 못했습니다. Worker 배포 상태를 확인하세요.')}
@@ -331,12 +331,12 @@ form.addEventListener('submit',async e=>{
   if(requestToken!==activeRequestToken)return;
   if(!response.ok)throw new Error(data.error||'작업 등록 실패 (HTTP '+response.status+').');
   localStorage.setItem(PENDING_JOB_STORAGE,JSON.stringify({id:data.id,food,style,submittedAt:Date.now()}));
-  activeJobId=data.id;cancelRequested=false;btn.disabled=false;btn.textContent='레시피 생성중';stopBtn.classList.add('show');setStatus('',false);
+  activeJobId=data.id;cancelRequested=false;btn.disabled=true;btn.textContent='레시피 생성중';$('food').disabled=true;stopBtn.classList.add('show');setStatus('',false);
   await pollRecipeJob(data.id,food,style,btn,requestToken);
  }catch(err){
   if(requestToken===activeRequestToken){console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
  }finally{
-  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';stopBtn.classList.remove('show');activeJobId=null;}
+  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;}
  }
 });
 async function resumePendingRecipeJob(){
@@ -345,10 +345,10 @@ async function resumePendingRecipeJob(){
  const base=getStoredServerUrl();if(!base){setStatus('진행 중이던 작업이 있습니다. 서버 주소를 설정하면 상태를 다시 확인할 수 있습니다.');return}
  $('food').value=pending.food||'';
  if(pending.style)setSelectedStyle(pending.style);
- const btn=$('searchBtn');btn.disabled=false;btn.textContent='레시피 생성중';$('stopBtn').classList.add('show');activeJobId=pending.id;cancelRequested=false;const requestToken=++activeRequestToken;setStatus('',false);
+ const btn=$('searchBtn');btn.disabled=true;btn.textContent='레시피 생성중';$('food').disabled=true;$('stopBtn').classList.add('show');activeJobId=pending.id;cancelRequested=false;const requestToken=++activeRequestToken;setStatus('',false);
  try{await pollRecipeJob(pending.id,pending.food,pending.style,btn,requestToken)}
  catch(err){console.error('Resume recipe job error:',err);setStatus(err?.message||'이전 작업 상태를 확인하지 못했습니다.')}
- finally{if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('stopBtn').classList.remove('show');activeJobId=null}}
+ finally{if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;$('stopBtn').classList.remove('show');activeJobId=null}}
 }
 updateApiKeyUI();
 setTimeout(()=>{resumePendingRecipeJob()},0);</script></body></html>
