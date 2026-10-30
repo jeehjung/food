@@ -36,7 +36,7 @@ ALLOWED_ORIGINS = "https://food-dev.pages.dev"
 [[env.development.d1_databases]]
 binding = "DB"
 database_name = "food-recipe-jobs-dev"
-database_id = "REPLACE_WITH_DEV_D1_DATABASE_ID"
+database_id = "ad114d90-ebca-458d-a755-78a878b0030b"
 
 [[env.development.queues.producers]]
 binding = "RECIPE_QUEUE"
