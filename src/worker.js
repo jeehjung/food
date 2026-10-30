@@ -83,9 +83,15 @@ async function searchVideos(food, apiKey) {
     channel:x.snippet?.channelTitle || "채널 정보 없음",publishedAt:x.snippet?.publishedAt || "",
     url:"https://www.youtube.com/watch?v=" + x.id.videoId,views:0
   }));
-  // YouTube 검색 API가 검색어 관련도를 계산하므로 제목에 검색어 전체가 있어야 한다는 추가 필터는 적용하지 않습니다.
-  // 백종원 간장계란처럼 제목에 일부 단어만 있거나 표현 순서가 다른 관련 영상도 유지합니다.
-  if (!videos.length) throw new Error("유튜브에서 관련 영상을 찾지 못했습니다. 검색어를 조금 바꾸어 다시 시도하세요.");
+  // 검색어의 모든 핵심 단어가 제목·설명·채널명 중 하나에는 포함된 영상만 유지합니다.
+  // 공백과 특수문자를 제거해 '옥동자표 제육볶음'처럼 단어가 붙거나 표현 순서가 달라도 매칭합니다.
+  const normalize = value => String(value || "").toLocaleLowerCase("ko-KR").replace(/[\\s\\p{P}\\p{S}]+/gu, "");
+  const searchTerms = food.toLocaleLowerCase("ko-KR").trim().split(/\\s+/).filter(Boolean);
+  videos = videos.filter(video => {
+    const searchableText = normalize([video.title, video.description, video.channel].join(" "));
+    return searchTerms.every(term => searchableText.includes(normalize(term)));
+  });
+  if (!videos.length) throw new Error("검색어의 핵심 단어가 포함된 유튜브 영상을 찾지 못했습니다. 음식명이나 스타일 이름을 조금 바꾸어 다시 시도하세요.");
   try {
     const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
     if (statsResponse.ok) {
