@@ -145,7 +145,10 @@ async function handleRequest(request,env) {
   if (requestOrigin&&!origin) return json({error:"허용되지 않은 웹사이트에서의 요청입니다."},403,"");
   if (!env.DB||!env.RECIPE_QUEUE) return json({error:"서버 바인딩 설정이 완료되지 않았습니다."},503,origin);
   const url=new URL(request.url);
-  if (request.method==="GET"&&url.pathname==="/api/health") return json({ok:true,service:"food-recipe-api"},200,origin);
+  if (request.method==="GET"&&url.pathname==="/api/health") {
+    const service=url.hostname.startsWith("food-recipe-api-dev.")?"food-recipe-api-dev":"food-recipe-api";
+    return json({ok:true,service},200,origin);
+  }
   if (request.method==="POST"&&url.pathname==="/api/jobs") {
     if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
     let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
