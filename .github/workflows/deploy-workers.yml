@@ -1,5 +1,7 @@
 name: Deploy Cloudflare Workers
 
+# Automatic Worker deployment for this branch.
+
 on:
   push:
     branches:
