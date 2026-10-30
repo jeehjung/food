@@ -83,7 +83,7 @@ async function searchVideos(food, apiKey) {
     channel:x.snippet?.channelTitle || "채널 정보 없음",publishedAt:x.snippet?.publishedAt || "",
     url:"https://www.youtube.com/watch?v=" + x.id.videoId,views:0
   }));
-  // 검색어와 영상 제목의 공백을 제거한 뒤 비교해 붙여쓰기/띄어쓰기를 모두 허용합니다.
+  // 검색어를 단어별로 나누고, 제목에 모든 단어가 포함되면 인정합니다. 단어 순서는 상관없습니다.
   const searchTerms = food.toLocaleLowerCase("ko-KR").split(/\s+/).filter(Boolean);
   videos = videos.filter(v => {
     const normalizedTitle = v.title.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
