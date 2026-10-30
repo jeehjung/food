@@ -75,7 +75,7 @@ let activeHistoryId=null;
 let currentBaseText='';
 let currentBaseServings=2;
 let currentVideoIndex=0,requestedVideoIndex=0,alternateRequestPending=false;
-function updateAgainButton(){const button=$('againBtn');if(!button)return;const remaining=Math.max(0,2-currentVideoIndex);button.disabled=remaining===0;button.textContent=remaining?`다른 영상으로 레시피 만들기 (남은 ${remaining}회)`:'다른 영상으로 다시 찾기 완료';}
+function updateAgainButton(){const button=$('againBtn');if(!button)return;const remaining=Math.max(0,2-currentVideoIndex);button.disabled=!!activeJobId||remaining===0;button.textContent=remaining?`다른 영상으로 레시피 만들기 (남은 ${remaining}회)`:'다른 영상으로 다시 찾기 완료';}
 function setStatus(msg,show=true){statusBox.textContent=msg;statusBox.classList.toggle('show',show)}
 function describeApiError(service,status,data){
  const err=data?.error||data||{},detail=String(err.message||err.status||'').trim();
@@ -327,7 +327,7 @@ form.addEventListener('submit',async e=>{
  if(activeJobId)await stopCurrentRecipe();
  const requestToken=++activeRequestToken;
  const btn=$('searchBtn'),stopBtn=$('stopBtn');
- btn.disabled=true;btn.textContent='서버에 등록 중…';$('food').disabled=true;stopBtn.classList.remove('show');
+ btn.disabled=true;btn.textContent='서버에 등록 중…';$('againBtn').disabled=true;$('food').disabled=true;stopBtn.classList.remove('show');
  result.classList.remove('show');
  try{
   let response;try{response=await fetch(base+'/api/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({food,style,videoIndex,geminiApiKey})})}catch(err){throw new Error('서버에 연결하지 못했습니다. Worker 배포 상태를 확인하세요.')}
@@ -340,7 +340,7 @@ form.addEventListener('submit',async e=>{
  }catch(err){
   if(requestToken===activeRequestToken){updateAgainButton();console.error('Recipe job error:',err);setStatus(err?.message||'레시피 생성 요청에 실패했습니다.')}
  }finally{
-  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;}
+  if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;stopBtn.classList.remove('show');activeJobId=null;updateAgainButton();}
  }
 });
 async function resumePendingRecipeJob(){
