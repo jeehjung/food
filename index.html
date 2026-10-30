@@ -358,9 +358,11 @@ async function loadLatestUpdate(){
   if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
   const commit=await response.json();
   const updatedAt=commit?.commit?.committer?.date||commit?.commit?.author?.date;
+  const commitName=commit?.commit?.message?.split('\n')[0]?.trim();
   if(!updatedAt)throw new Error('Commit date unavailable');
   const date=new Date(updatedAt);
-  el.textContent='Latest update: '+date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+  const formattedDate=date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+  el.textContent='Latest update: '+formattedDate+(commitName?' ('+commitName+')':'');
  }catch(error){
   el.textContent='Latest update: 확인할 수 없음';
   console.warn('Latest update 조회 실패:',error);
