@@ -67,7 +67,7 @@ let activeJobId=null, cancelRequested=false;
 const selectedStyle=()=>document.querySelector('input[name="style"]:checked')?.value||'가장 인기 많은';
 function setSelectedStyle(value){const radio=document.querySelector('input[name="style"][value="'+CSS.escape(value||'')+'"]');if(radio)radio.checked=true;}
 const GEMINI_KEY_STORAGE='iuns_recipe_gemini_api_key_v1';
-const DEFAULT_SERVER_URL='https://food-recipe-api.food-recipe-api.workers.dev';
+const DEFAULT_SERVER_URL='https://food-recipe-api.jeeh.workers.dev';
 const PENDING_JOB_STORAGE='iuns_recipe_pending_job_v1';
 const HISTORY_STORAGE='iuns_recipe_history_v1';
 let historyFilter='all';
