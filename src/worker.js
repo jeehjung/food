@@ -74,7 +74,8 @@ async function fetchJsonBeforeDeadline(url, options, deadlineAt = null) {
   }
 }
 async function searchVideos(food, apiKey) {
-  const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:food,key:apiKey});
+  const searchQuery = /레시피\s*$/u.test(food) ? food : food + " 레시피";
+  const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:searchQuery,key:apiKey});
   const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/search?" + params, {});
   if (!response.ok) throw new Error(errorMessage("YouTube Data API", response.status, data));
   let videos = (data.items || []).filter(x => x.id?.videoId).map(x => ({
@@ -88,9 +89,11 @@ async function searchVideos(food, apiKey) {
   const searchTerms = food.toLocaleLowerCase("ko-KR").trim().split(/\s+/).filter(Boolean);
   videos = videos.filter(video => {
     const searchableText = normalize([video.title, video.description, video.channel].join(" "));
-    return searchTerms.every(term => searchableText.includes(normalize(term)));
+    const recipeText = normalize([video.title, video.description].join(" "));
+    const hasRecipeContext = ["레시피","만드는법","만들기","요리법","조리법"].some(term => recipeText.includes(normalize(term)));
+    return hasRecipeContext && searchTerms.every(term => searchableText.includes(normalize(term)));
   });
-  if (!videos.length) throw new Error("검색어의 핵심 단어가 포함된 유튜브 영상을 찾지 못했습니다. 음식명이나 스타일 이름을 조금 바꾸어 다시 시도하세요.");
+  if (!videos.length) throw new Error("음식명과 레시피 관련 표현이 확인되는 유튜브 영상을 찾지 못했습니다. 먹방 등 조리법이 아닌 영상은 제외했어요. 음식명을 조금 바꾸어 다시 시도하세요.");
   try {
     const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
     if (statsResponse.ok) {
