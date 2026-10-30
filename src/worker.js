@@ -104,26 +104,32 @@ function buildPrompt(food, style, primary, references) {
   const refContext = references.map((v,i)=>"보조 영상 "+(i+1)+": "+v.title+"\n채널: "+v.channel+"\n조회수: "+v.views+"\n설명: "+v.description.slice(0,500)+"\nURL: "+v.url).join("\n\n");
   return "당신은 한국어 레시피 에디터입니다. 기준 영상 1개를 주된 출처로 사용하고 보조 영상은 양과 시간 추정에 꼭 필요할 때만 제한적으로 참고하세요.\n음식: "+food+"\n옵션: "+style+"\n기준 양: 2인분\n\n[기준 영상 — 재료 구성과 조리 순서를 결정하는 유일한 출처]\n"+context+"\n\n[보조 영상 — 양과 조리 시간 추정에만 사용 가능]\n"+(refContext||"보조 영상 없음")+"\n\n필수 규칙:\n1) 기준 영상의 음성, 자막, 화면에 실제로 등장하는 재료와 양념을 빠짐없이 확인하세요. 다시다, 맛소금, 설탕, 후추처럼 소량이거나 마지막에 추가되는 재료도 놓치지 마세요.\n2) 재료 종류, 양념 종류, 투입 순서, 조리법은 기준 영상만 따르세요. 보조 영상에만 등장하는 재료를 추가하지 마세요.\n3) 기준 영상에서 양이나 시간이 확인되지 않을 때에만 보조 영상으로 추정할 수 있습니다. 기준 영상에 이미 있는 재료에 한정하고, 추정한 양이나 시간은 '추정'이라고 표시하세요.\n4) 영상에서 확인되지 않는 정보를 확인했다고 주장하지 마세요. 보조 영상이 기준 영상과 다르면 기준 영상을 우선하세요.\n5) '아이들도 먹기 좋은' 옵션이면 기준 영상 레시피에서 맵기와 자극적인 재료만 조정하세요.\n6) 출력은 반드시 '🥕 필요한 재료 (2인분)'과 '👩‍🍳 조리 순서' 두 항목만 작성하세요. 재료는 '- 재료명: 양' 형식, 조리 순서는 번호를 붙여 짧게 작성하세요.\n7) 조리 단계마다 재료명과 용량을 명시하고 재료 목록과 일치시키세요. 조리 시간은 추정이면 밝혀 주세요. 소개나 결론은 쓰지 마세요.";
 }
-async function callGemini(model, prompt, primary, references, apiKey, deadlineAt) {
+async function callGemini(model, prompt, primary, apiKey, deadlineAt) {
   return await fetchJsonBeforeDeadline("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method:"POST",headers:{"content-type":"application/json","x-goog-api-key":apiKey},
-    body:JSON.stringify({model,input:[{type:"text",text:prompt},{type:"video",uri:primary.url},...references.map(v=>({type:"video",uri:v.url}))]})
+    body:JSON.stringify({
+      model,
+      input:[
+        {type:"video",uri:primary.url,processing:"agentic"},
+        {type:"text",text:prompt}
+      ]
+    })
   }, deadlineAt);
 }
 async function generateRecipe(food, style, env, geminiApiKey) {
-  const videos=await searchVideos(food,env.YOUTUBE_API_KEY),primary=videos[0],references=videos.slice(1,4);
+  const videos=await searchVideos(food,env.YOUTUBE_API_KEY),primary=videos[0],references=[];
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
   // Only Gemini generation has a 2-minute deadline. Queue wait, YouTube lookup, browser inactivity,\n  // and /api/jobs polling do not consume this timeout.
   const deadlineAt=Date.now()+JOB_TIMEOUT_SECONDS*1000;
   const model="gemini-3.5-flash-lite";
-  const result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
+  const result=await callGemini(model,prompt,primary,geminiApiKey,deadlineAt);
   if (!result.response.ok) {
     throw new Error(errorMessage("Gemini Flash-Lite",result.response.status,result.data));
   }
   const d=result.data,parts=Array.isArray(d?.steps)?d.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
   const text=String(d?.output_text||parts.map(p=>p.text||"").join("\n")||(Array.isArray(d?.output)?d.output.flatMap(s=>s.content||[]).map(p=>p.text||"").join("\n"):"")).trim();
   if (!text) throw new Error("Gemini가 레시피 내용을 반환하지 않았습니다."+(d?.error?.message?" ("+String(d.error.message).slice(0,250)+")":""));
-  return {food,style,text,sources:[primary,...references].map(v=>({title:v.title,url:v.url,channel:v.channel,publishedAt:v.publishedAt,views:v.views})),model,elapsedSeconds:Number(((Date.now()-started)/1000).toFixed(1))};
+  return {food,style,text,sources:[primary].map(v=>({title:v.title,url:v.url,channel:v.channel,publishedAt:v.publishedAt,views:v.views})),model,videoProcessing:"agentic",elapsedSeconds:Number(((Date.now()-started)/1000).toFixed(1))};
 }
 async function updateJob(db,id,status,fields={}) {
   const now=Math.floor(Date.now()/1000);
