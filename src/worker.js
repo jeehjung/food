@@ -85,8 +85,8 @@ async function searchVideos(food, apiKey) {
   }));
   // 검색어의 모든 핵심 단어가 제목·설명·채널명 중 하나에는 포함된 영상만 유지합니다.
   // 공백과 특수문자를 제거해 '옥동자표 제육볶음'처럼 단어가 붙거나 표현 순서가 달라도 매칭합니다.
-  const normalize = value => String(value || "").toLocaleLowerCase("ko-KR").replace(/[\\s\\p{P}\\p{S}]+/gu, "");
-  const searchTerms = food.toLocaleLowerCase("ko-KR").trim().split(/\\s+/).filter(Boolean);
+  const normalize = value => String(value || "").toLocaleLowerCase("ko-KR").replace(/[\s\p{P}\p{S}]+/gu, "");
+  const searchTerms = food.toLocaleLowerCase("ko-KR").trim().split(/\s+/).filter(Boolean);
   videos = videos.filter(video => {
     const searchableText = normalize([video.title, video.description, video.channel].join(" "));
     return searchTerms.every(term => searchableText.includes(normalize(term)));
