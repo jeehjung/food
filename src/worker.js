@@ -83,8 +83,12 @@ async function searchVideos(food, apiKey) {
     channel:x.snippet?.channelTitle || "채널 정보 없음",publishedAt:x.snippet?.publishedAt || "",
     url:"https://www.youtube.com/watch?v=" + x.id.videoId,views:0
   }));
-  const terms = food.toLocaleLowerCase("ko-KR").split(/\s+/).filter(Boolean);
-  videos = videos.filter(v => { const title=v.title.toLocaleLowerCase("ko-KR"); return terms.every(term => title.includes(term)); });
+  // 검색어와 영상 제목의 공백을 제거한 뒤 비교해 붙여쓰기/띄어쓰기를 모두 허용합니다.
+  const normalizedFood = food.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
+  videos = videos.filter(v => {
+    const normalizedTitle = v.title.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
+    return normalizedTitle.includes(normalizedFood);
+  });
   if (!videos.length) throw new Error("유튜브 영상 제목에 입력한 음식명의 모든 단어가 포함된 영상이 없습니다. 음식명을 바꾸어 다시 시도하세요.");
   try {
     const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
