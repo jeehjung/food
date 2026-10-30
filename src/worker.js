@@ -111,18 +111,10 @@ async function generateRecipe(food, style, env, geminiApiKey) {
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
   // Only Gemini generation has a 2-minute deadline. Queue wait, YouTube lookup, browser inactivity,\n  // and /api/jobs polling do not consume this timeout.
   const deadlineAt=Date.now()+JOB_TIMEOUT_SECONDS*1000;
-  let model="gemini-3.5-flash-lite",result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
+  const model="gemini-3.5-flash-lite";
+  const result=await callGemini(model,prompt,primary,references,geminiApiKey,deadlineAt);
   if (!result.response.ok) {
-    const firstError=errorMessage("Gemini Flash-Lite",result.response.status,result.data);
-    // Quota/rate-limit failures are account/key usage problems, so retrying another model only wastes time.
-    if (isQuotaError(result.response.status,result.data)) throw new Error(firstError);
-    result=await callGemini("gemini-3.8-flash",prompt,primary,references,geminiApiKey,deadlineAt);
-    if (!result.response.ok) {
-      const fallbackError=errorMessage("Gemini 대체 모델",result.response.status,result.data);
-      if (isQuotaError(result.response.status,result.data)) throw new Error(fallbackError);
-      throw new Error(firstError+" 대체 모델도 실패했습니다. "+fallbackError);
-    }
-    model="gemini-3.8-flash";
+    throw new Error(errorMessage("Gemini Flash-Lite",result.response.status,result.data));
   }
   const d=result.data,parts=Array.isArray(d?.steps)?d.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
   const text=String(d?.output_text||parts.map(p=>p.text||"").join("\n")||(Array.isArray(d?.output)?d.output.flatMap(s=>s.content||[]).map(p=>p.text||"").join("\n"):"")).trim();
