@@ -170,10 +170,10 @@ function scaleCookingQuantities(text,factor){
  });
 }
 function adjustCookingTime(text,factor){
- if(factor<=1)return String(text||'');
+ if(factor===1)return String(text||'');
  const step=String(text||'');
- if(!/(끓|졸|삶|데치|볶|굽|익히|튀기|조리|가열|煮)/.test(step))return step;
- const timeFactor=1+Math.min(0.3,0.15*Math.log2(factor));
+ if(!/(손질|준비|끓|졸|삶|데치|볶|굽|익히|튀기|조리|가열|煮)/.test(step))return step;
+ const timeFactor=1+Math.max(-0.3,Math.min(0.3,0.15*Math.log2(factor)));
  return step.replace(/\(([^()]*)\)/g,(whole,inside)=>{
   if(!/(초|분|시간)/.test(inside))return whole;
   return '('+inside.replace(/(약\s*)?(\d+(?:\.\d+)?)(\s*~\s*(\d+(?:\.\d+)?))?\s*(초|분|시간)/g,(match,approx,first,range,end,unit)=>{
