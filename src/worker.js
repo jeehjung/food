@@ -89,7 +89,7 @@ async function searchVideos(food, apiKey) {
     const normalizedTitle = v.title.toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
     return searchTerms.every(term => normalizedTitle.includes(term.replace(/\s+/g, "")));
   });
-  if (!videos.length) throw new Error("유튜브 영상 제목에 입력한 음식명의 모든 단어가 포함된 영상이 없습니다. 음식명을 바꾸어 다시 시도하세요.");
+  if (!videos.length) throw new Error("유튜브 영상 제목에 입력한 검색어의 모든 단어가 포함된 영상이 없습니다. 검색어를 줄이거나 음식명을 바꾸어 다시 시도하세요.");
   try {
     const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
     if (statsResponse.ok) {
