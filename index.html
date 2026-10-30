@@ -58,7 +58,7 @@
 </form>
 </section>
 <div class="modalback history-backdrop" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle"><div class="history-modal-panel"><div class="history-modal-head"><div class="history-modal-icon">◷</div><h2 id="historyModalTitle">저장된 레시피 보관함</h2><button type="button" class="history-close" id="historyClose" aria-label="닫기">×</button></div><div id="historyList" class="history-list"></div><div class="history-modal-footer"><button type="button" id="deleteNonFavorites" class="history-delete-nonfavorites">즐겨찾기 외 레시피 모두 삭제</button><button type="button" id="historyFooterClose">닫기</button></div></div></div><div id="status" role="status" aria-live="polite"></div><section class="result" id="result"><h2 id="resultTitle">레시피 정리</h2><div class="sub" id="resultSub"></div><div class="result-serving"><label>용량 조정</label><div class="serving-stepper"><button type="button" id="servingsDown" class="serving-step" aria-label="용량 줄이기" title="용량 줄이기">−</button><output id="resultServings" aria-live="polite">기본 양</output><button type="button" id="servingsUp" class="serving-step" aria-label="용량 늘리기" title="용량 늘리기">＋</button></div><p class="hint">버튼으로 용량을 조정하면 재료 양이 자동 계산돼요.</p></div><div class="answer" id="answer"></div><div class="sources"><h3>🎬 레시피 기준 영상</h3><div class="source-list" id="sourceList"></div></div><div class="actions"><button class="ghost" id="againBtn" type="button">다른 스타일로 다시 찾기</button></div></section>
-<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">☁️ 레시피 API 설정</h2><p>Gemini API 키는 이 브라우저에 저장됩니다. 레시피 요청 때 Cloudflare Worker로 전송되어 Queue를 거쳐 Gemini에 사용됩니다.</p><label for="geminiApiKeyInput">Gemini API 키</label><input id="geminiApiKeyInput" type="password" placeholder="Google AI Studio API key" autocomplete="off" spellcheck="false"><p class="hint"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 Gemini API 키 발급</a></p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">키는 이 브라우저에 저장되며, 요청 처리 중 Cloudflare Queue에 포함될 수 있어 Cloudflare 서비스 운영자에게 보일 수 있습니다. 키를 삭제하려면 입력란을 비우고 저장하세요.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span></footer>
+<div class="modalback" id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"><div class="keymodal"><h2 id="apiKeyModalTitle">☁️ 레시피 API 설정</h2><p>Gemini API 키는 이 브라우저에 저장됩니다. 레시피 요청 때 Cloudflare Worker로 전송되어 Queue를 거쳐 Gemini에 사용됩니다.</p><label for="geminiApiKeyInput">Gemini API 키</label><input id="geminiApiKeyInput" type="password" placeholder="Google AI Studio API key" autocomplete="off" spellcheck="false"><p class="hint"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 Gemini API 키 발급</a></p><div class="actions"><button class="ghost" type="button" id="apiKeyCancel">취소</button><button class="primary" type="button" id="apiKeySave">저장하기</button></div><p class="hint" style="margin-top:12px;margin-bottom:0">키는 이 브라우저에 저장되며, 요청 처리 중 Cloudflare Queue에 포함될 수 있어 Cloudflare 서비스 운영자에게 보일 수 있습니다. 키를 삭제하려면 입력란을 비우고 저장하세요.</p></div></div><footer id="appFooter"><span id="modelVersion">사용 Gemini 버전: 자동 선택</span><span id="storageUsage">총 저장 용량: 계산 중…</span><span id="latestUpdate">Latest update: 확인 중…</span></footer>
 </main>
 <script>
 'use strict';
@@ -350,5 +350,22 @@ async function resumePendingRecipeJob(){
  catch(err){console.error('Resume recipe job error:',err);setStatus(err?.message||'이전 작업 상태를 확인하지 못했습니다.')}
  finally{if(requestToken===activeRequestToken){btn.disabled=false;btn.textContent='레시피 찾기 ↗';$('food').disabled=false;$('stopBtn').classList.remove('show');activeJobId=null}}
 }
+async function loadLatestUpdate(){
+ const el=$('latestUpdate');
+ if(!el)return;
+ try{
+  const response=await fetch('https://api.github.com/repos/jeehjung/food/commits/develop',{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});
+  if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
+  const commit=await response.json();
+  const updatedAt=commit?.commit?.committer?.date||commit?.commit?.author?.date;
+  if(!updatedAt)throw new Error('Commit date unavailable');
+  const date=new Date(updatedAt);
+  el.textContent='Latest update: '+date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+ }catch(error){
+  el.textContent='Latest update: 확인할 수 없음';
+  console.warn('Latest update 조회 실패:',error);
+ }
+}
+loadLatestUpdate();
 updateApiKeyUI();
 setTimeout(()=>{resumePendingRecipeJob()},0);</script></body></html>
