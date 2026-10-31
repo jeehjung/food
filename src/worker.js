@@ -27,15 +27,15 @@ function corsOrigin(request, env) {
 }
 function isQuotaError(status, body) {
   const error = body?.error || body || {};
-  const detail = String(error.message || body?.message || error.status || body?.status || "");
-  const reasons = (Array.isArray(error.errors) ? error.errors : []).map(item => String(item.reason || item.message || "")).join(" ");
-  const code = String(error.status || body?.status || "");
-  const info = (detail + " " + reasons + " " + code).toLowerCase();
+  const reasons = (Array.isArray(error.errors) ? error.errors : [])
+    .map(item => String(item.reason || "")).join(" ").toLowerCase();
+  const code = String(error.status || body?.status || "").toLowerCase();
+  const detail = String(error.message || body?.message || "").toLowerCase();
+  // YouTube의 명시적인 quota reason 또는 HTTP 429만 한도 오류로 분류합니다.
+  // 단순히 메시지에 quota/billing이라는 단어가 있다는 이유만으로 분류하지 않습니다.
   return status === 429 || [
-    "quotaexceeded", "dailylimitexceeded", "ratelimitexceeded", "resource_exhausted",
-    "resource exhausted", "quota", "rate limit", "rate_limit", "requests per day",
-    "per day limit", "daily limit", "free tier", "free_tier", "billing"
-  ].some(signal => info.includes(signal));
+    "quotaexceeded", "dailylimitexceeded", "ratelimitexceeded"
+  ].some(reason => reasons.includes(reason) || code.includes(reason) || detail.includes(reason));
 }
 function errorMessage(service, status, body) {
   const error = body?.error || body || {};
@@ -44,8 +44,12 @@ function errorMessage(service, status, body) {
   const code = String(error.status || body?.status || "");
   const info = (detail + " " + reasons + " " + code).toLowerCase();
   if (isQuotaError(status, body)) {
-    return service + " 무료 사용량(할당량) 또는 요청 한도를 초과했습니다. " +
-      "Google AI Studio의 API 사용량/한도와 결제 설정을 확인해 주세요. 사용량이 초기화되거나 한도가 조정된 뒤 다시 시도해 주세요.";
+    if (service === "YouTube Data API") {
+      return "YouTube Data API 요청 한도 또는 할당량을 초과했습니다. Google Cloud Console에서 YouTube Data API v3의 일일 할당량과 사용량을 확인해 주세요." +
+        (detail ? " (상세: " + detail.slice(0, 250) + ")" : "");
+    }
+    return service + " 요청 한도 또는 할당량을 초과했습니다. 해당 API 제공자의 사용량과 한도 설정을 확인해 주세요." +
+      (detail ? " (상세: " + detail.slice(0, 250) + ")" : "");
   }
   if (status === 401) return service + " API 키가 유효하지 않습니다. Cloudflare 서버 Secret을 확인해 주세요.";
   if (status === 403) {
