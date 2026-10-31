@@ -25,26 +25,19 @@ dead_letter_queue = "food-recipe-dead-letter"
 [triggers]
 crons = ["0 * * * *"]
 
-# Development environment: deploy with "npx wrangler deploy --env development".
-# Create the separate D1 database and Queues before deploying, then replace the D1 ID.
-[env.development]
-name = "food-recipe-api-dev"
+[observability]
+enabled = true
+head_sampling_rate = 1
 
-[env.development.vars]
-ALLOWED_ORIGINS = "https://food-dev.pages.dev"
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
 
-[[env.development.d1_databases]]
-binding = "DB"
-database_name = "food-recipe-jobs-dev"
-database_id = "ad114d90-ebca-458d-a755-78a878b0030b"
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
 
-[[env.development.queues.producers]]
-binding = "RECIPE_QUEUE"
-queue = "food-recipe-jobs-dev"
-
-[[env.development.queues.consumers]]
-queue = "food-recipe-jobs-dev"
-max_batch_size = 1
-max_batch_timeout = 5
-max_retries = 2
-dead_letter_queue = "food-recipe-dead-letter-dev"
+[observability.issue_detection]
+enabled = false
