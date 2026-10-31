@@ -1,0 +1,43 @@
+name = "food-recipe-api-dev"
+main = "src/worker.js"
+compatibility_date = "2026-10-28"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://food-dev.pages.dev,https://*.food-dev.pages.dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "food-recipe-jobs-dev"
+database_id = "ad114d90-ebca-458d-a755-78a878b0030b"
+
+[[queues.producers]]
+binding = "RECIPE_QUEUE"
+queue = "food-recipe-jobs-dev"
+
+[[queues.consumers]]
+queue = "food-recipe-jobs-dev"
+max_batch_size = 1
+max_batch_timeout = 5
+max_retries = 2
+dead_letter_queue = "food-recipe-dead-letter-dev"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = false
+head_sampling_rate = 1
+persist = true
+
+[observability.issue_detection]
+enabled = false
