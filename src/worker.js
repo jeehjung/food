@@ -14,7 +14,17 @@ function json(data, status = 200, origin = "") {
 function corsOrigin(request, env) {
   const origin = request.headers.get("Origin") || "";
   const allowed = String(env.ALLOWED_ORIGINS || "https://jeehjung.github.io").split(",").map(x => x.trim()).filter(Boolean);
-  return allowed.includes(origin) ? origin : "";
+  const matches = allowed.some(rule => {
+    if (rule === origin) return true;
+    // Allow Cloudflare Pages PR preview subdomains, e.g. https://<hash>.food-dev.pages.dev.
+    if (rule.startsWith("https://*.") && origin.startsWith("https://")) {
+      const suffix = rule.slice("https://*".length).toLowerCase();
+      const hostname = origin.slice("https://".length).toLowerCase();
+      return hostname.endsWith(suffix) && hostname.length > suffix.length && !hostname.slice(0, -suffix.length).includes("/");
+    }
+    return false;
+  });
+  return matches ? origin : "";
 }
 function isQuotaError(status, body) {
   const error = body?.error || body || {};
