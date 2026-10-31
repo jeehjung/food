@@ -88,7 +88,8 @@ async function searchVideos(food, apiKey) {
   const normalizedQuery = normalize(queryText);
   // 입력한 모든 검색어를 유지합니다. 띄어쓰기·붙여쓰기 차이만 정규화해 비교합니다.
   const terms = queryText.toLocaleLowerCase("ko-KR").split(/\s+/).map(normalize).filter(term => term.length >= 2);
-  const searchQueries = [...new Set([queryText, queryText + " 레시피"])];
+  const searchQuery = /레시피\s*$/u.test(queryText) ? queryText : queryText + " 레시피";
+  const searchQueries = [searchQuery];
   const found = new Map();
 
   // 상호명·인물명·음식명이 함께 입력된 경우를 고려해 원문 검색을 먼저 수행합니다.
