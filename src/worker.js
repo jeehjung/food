@@ -16,7 +16,6 @@ function corsOrigin(request, env) {
   const allowed = String(env.ALLOWED_ORIGINS || "https://jeehjung.github.io").split(",").map(x => x.trim()).filter(Boolean);
   const matches = allowed.some(rule => {
     if (rule === origin) return true;
-    // Allow Cloudflare Pages PR preview subdomains, e.g. https://<hash>.food-dev.pages.dev.
     if (rule.startsWith("https://*.") && origin.startsWith("https://")) {
       const suffix = rule.slice("https://*".length).toLowerCase();
       const hostname = origin.slice("https://".length).toLowerCase();
