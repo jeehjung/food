@@ -114,16 +114,26 @@ async function searchVideos(food, apiKey) {
     return [...found.values()].map(video => {
       const title = normalize(video.title);
       const description = normalize(video.description);
+      // 제목·설명에 포함된 해시태그도 별도로 추출해 검색어 일치 여부에 반영합니다.
+      const hashtagText = normalize(
+        [...(String(video.title || "") + " " + String(video.description || "")).matchAll(/#[\\p{L}\\p{N}_]+/gu)]
+          .map(match => match[0].slice(1))
+          .join(" ")
+      );
       const channel = normalize(video.channel);
       const titleHits = terms.filter(term => title.includes(term)).length;
       const descriptionHits = terms.filter(term => description.includes(term)).length;
+      const hashtagHits = terms.filter(term => hashtagText.includes(term)).length;
       const exactTitleMatch = !!normalizedQuery && title.includes(normalizedQuery);
       const hasCookingContext = cookingSignals.some(term => title.includes(normalize(term)) || description.includes(normalize(term)));
       const looksLikeNonRecipe = excludeSignals.some(term => title.includes(normalize(term))) && !hasCookingContext;
-      // 입력한 모든 단어가 제목 또는 설명에 포함되어야 합니다. 공백은 제거해 띄어쓰기 차이는 허용합니다.
-      const allTermsIncluded = terms.length > 0 && terms.every(term => title.includes(term) || description.includes(term));
+      // 입력한 모든 단어가 제목·설명 또는 해시태그에 포함되면 통과합니다.
+      // 해시태그는 # 기호를 제외하고 비교하며 띄어쓰기 차이는 정규화합니다.
+      const allTermsIncluded = terms.length > 0 && terms.every(term =>
+        title.includes(term) || description.includes(term) || hashtagText.includes(term)
+      );
       const relevant = !looksLikeNonRecipe && allTermsIncluded;
-      const score = (exactTitleMatch ? 100 : 0) + titleHits * 20 + descriptionHits * 3 + (hasCookingContext ? 15 : 0) + (channel.includes(normalizedQuery) ? 5 : 0);
+      const score = (exactTitleMatch ? 100 : 0) + titleHits * 20 + descriptionHits * 3 + hashtagHits * 12 + (hasCookingContext ? 15 : 0) + (channel.includes(normalizedQuery) ? 5 : 0);
       return {video,relevant,score};
     }).filter(item => item.relevant).sort((a,b) => b.score-a.score).map(item => item.video);
   };
