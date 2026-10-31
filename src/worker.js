@@ -83,31 +83,64 @@ async function fetchJsonBeforeDeadline(url, options, deadlineAt = null) {
   }
 }
 async function searchVideos(food, apiKey) {
-  const searchQuery = /레시피\s*$/u.test(food) ? food : food + " 레시피";
-  const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:searchQuery,key:apiKey});
-  const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/search?" + params, {});
-  if (!response.ok) throw new Error(errorMessage("YouTube Data API", response.status, data));
-  let videos = (data.items || []).filter(x => x.id?.videoId).map(x => ({
-    id:x.id.videoId,title:x.snippet?.title || "제목 없음",description:x.snippet?.description || "",
-    channel:x.snippet?.channelTitle || "채널 정보 없음",publishedAt:x.snippet?.publishedAt || "",
-    url:"https://www.youtube.com/watch?v=" + x.id.videoId,views:0
-  }));
-  // 검색어의 모든 핵심 단어가 제목·설명·채널명 중 하나에는 포함된 영상만 유지합니다.
-  // 공백과 특수문자를 제거해 '옥동자표 제육볶음'처럼 단어가 붙거나 표현 순서가 달라도 매칭합니다.
   const normalize = value => String(value || "").toLocaleLowerCase("ko-KR").replace(/[\s\p{P}\p{S}]+/gu, "");
-  const searchTerms = food.toLocaleLowerCase("ko-KR").trim().split(/\s+/).filter(Boolean);
-  videos = videos.filter(video => {
-    const searchableText = normalize([video.title, video.description, video.channel].join(" "));
-    const recipeText = normalize([video.title, video.description].join(" "));
-    const hasRecipeContext = ["레시피","만드는법","만들기","요리법","조리법"].some(term => recipeText.includes(normalize(term)));
-    return hasRecipeContext && searchTerms.every(term => searchableText.includes(normalize(term)));
-  });
-  if (!videos.length) throw new Error("음식명과 레시피 관련 표현이 확인되는 유튜브 영상을 찾지 못했습니다. 먹방 등 조리법이 아닌 영상은 제외했어요. 음식명을 조금 바꾸어 다시 시도하세요.");
+  const queryText = String(food || "").trim();
+  const normalizedQuery = normalize(queryText);
+  const terms = queryText.toLocaleLowerCase("ko-KR").split(/\s+/).map(normalize).filter(term => term.length >= 2);
+  const searchQueries = [queryText, queryText + " 레시피"];
+  const found = new Map();
+
+  // 상호명·인물명·음식명이 함께 입력된 경우를 고려해 원문 검색을 먼저 수행합니다.
+  // 원문 검색에서 조리 영상이 충분히 확인되지 않을 때만 '레시피'를 붙여 재검색합니다.
+  const fetchSearchResults = async query => {
+    const params = new URLSearchParams({part:"snippet",type:"video",maxResults:"50",order:"viewCount",regionCode:"KR",relevanceLanguage:"ko",q:query,key:apiKey});
+    const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/search?" + params, {});
+    if (!response.ok) throw new Error(errorMessage("YouTube Data API", response.status, data));
+    for (const item of data.items || []) {
+      if (!item.id?.videoId || found.has(item.id.videoId)) continue;
+      found.set(item.id.videoId, {
+        id:item.id.videoId,title:item.snippet?.title || "제목 없음",description:item.snippet?.description || "",
+        channel:item.snippet?.channelTitle || "채널 정보 없음",publishedAt:item.snippet?.publishedAt || "",
+        url:"https://www.youtube.com/watch?v=" + item.id.videoId,views:0
+      });
+    }
+  };
+
+  const rankCandidates = () => {
+    const cookingSignals = ["레시피","만드는법","만들기","요리법","조리법","요리","조리","황금레시피","간단요리","집밥","양념","볶음","찜닭","조림","계란밥"];
+    const excludeSignals = ["먹방","시식","맛집탐방","식당리뷰","방문후기"];
+    return [...found.values()].map(video => {
+      const title = normalize(video.title);
+      const description = normalize(video.description);
+      const channel = normalize(video.channel);
+      const titleHits = terms.filter(term => title.includes(term)).length;
+      const descriptionHits = terms.filter(term => description.includes(term)).length;
+      const exactTitleMatch = !!normalizedQuery && title.includes(normalizedQuery);
+      const hasCookingContext = cookingSignals.some(term => title.includes(normalize(term)) || description.includes(normalize(term)));
+      const looksLikeNonRecipe = excludeSignals.some(term => title.includes(normalize(term))) && !hasCookingContext;
+      // 제목에서 음식명 또는 입력 키워드가 확인되는 영상을 우선하며,
+      // 모든 입력 단어가 일치하지 않아도 제목의 핵심 단어가 맞으면 후보로 남깁니다.
+      const relevant = !looksLikeNonRecipe && (exactTitleMatch || titleHits > 0 || (descriptionHits > 0 && hasCookingContext));
+      const score = (exactTitleMatch ? 100 : 0) + titleHits * 20 + descriptionHits * 3 + (hasCookingContext ? 15 : 0) + (channel.includes(normalizedQuery) ? 5 : 0);
+      return {video,relevant,score};
+    }).filter(item => item.relevant).sort((a,b) => b.score-a.score).map(item => item.video);
+  };
+
+  await fetchSearchResults(searchQueries[0]);
+  let videos = rankCandidates();
+  if (!videos.length) {
+    await fetchSearchResults(searchQueries[1]);
+    videos = rankCandidates();
+  }
+  if (!videos.length) throw new Error("입력한 음식명과 관련된 조리 영상을 찾지 못했습니다. 음식명만 입력하거나 '음식명 만드는 법'처럼 검색어를 바꾸어 다시 시도해 주세요.");
+
+  // 검색 후보를 먼저 관련도순으로 정리한 뒤 조회수를 가져와, 관련 영상 안에서 인기순으로 표시합니다.
   try {
-    const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.map(v=>v.id).join(","),key:apiKey}), {});
+    const {response:statsResponse,data:statsData} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"statistics",id:videos.slice(0,50).map(v=>v.id).join(","),key:apiKey}), {});
     if (statsResponse.ok) {
       const stats = new Map((statsData.items || []).map(v => [v.id, Number(v.statistics?.viewCount || 0)]));
-      videos.forEach(v => { v.views=stats.get(v.id)||0; }); videos.sort((a,b)=>b.views-a.views);
+      videos.forEach(v => { v.views=stats.get(v.id)||0; });
+      videos.sort((a,b) => b.views-a.views);
     }
   } catch (_) {}
   return videos;
