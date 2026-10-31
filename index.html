@@ -376,7 +376,7 @@ async function loadLatestUpdate(){
  const el=$('latestUpdate');
  if(!el)return;
  try{
-  const response=await fetch('https://api.github.com/repos/jeehjung/food/commits/develop',{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});
+  const response=await fetch('https://api.github.com/repos/jeehjung/food/commits/main',{headers:{'Accept':'application/vnd.github+json'},cache:'no-store'});
   if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
   const commit=await response.json();
   const updatedAt=commit?.commit?.committer?.date||commit?.commit?.author?.date;
