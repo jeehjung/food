@@ -86,16 +86,9 @@ async function searchVideos(food, apiKey) {
   const normalize = value => String(value || "").toLocaleLowerCase("ko-KR").replace(/[\s\p{P}\p{S}]+/gu, "");
   const queryText = String(food || "").trim();
   const normalizedQuery = normalize(queryText);
-  const rawTerms = queryText.toLocaleLowerCase("ko-KR").split(/\s+/).map(normalize).filter(term => term.length >= 2);
-  // 브랜드·인물명이 음식명과 함께 입력된 경우, 해당 고유명사를 제외한 음식명으로도 검색합니다.
-  const nonFoodTerms = new Set(["백종원","봉추","김수미","이연복","성시경","류수영"]);
-  const foodTerms = rawTerms.filter(term => !nonFoodTerms.has(term));
-  const terms = foodTerms.length ? foodTerms : rawTerms;
-  const searchQueries = [...new Set([
-    queryText,
-    queryText + " 레시피",
-    ...foodTerms.flatMap(term => [term + " 레시피", term + " 만드는법"])
-  ])];
+  // 입력한 모든 검색어를 유지합니다. 띄어쓰기·붙여쓰기 차이만 정규화해 비교합니다.
+  const terms = queryText.toLocaleLowerCase("ko-KR").split(/\s+/).map(normalize).filter(term => term.length >= 2);
+  const searchQueries = [...new Set([queryText, queryText + " 레시피"])];
   const found = new Map();
 
   // 상호명·인물명·음식명이 함께 입력된 경우를 고려해 원문 검색을 먼저 수행합니다.
@@ -126,29 +119,20 @@ async function searchVideos(food, apiKey) {
       const exactTitleMatch = !!normalizedQuery && title.includes(normalizedQuery);
       const hasCookingContext = cookingSignals.some(term => title.includes(normalize(term)) || description.includes(normalize(term)));
       const looksLikeNonRecipe = excludeSignals.some(term => title.includes(normalize(term))) && !hasCookingContext;
-      // 제목에서 음식명 또는 입력 키워드가 확인되는 영상을 우선하며,
-      // 모든 입력 단어가 일치하지 않아도 제목의 핵심 단어가 맞으면 후보로 남깁니다.
-      const relevant = !looksLikeNonRecipe && (exactTitleMatch || titleHits > 0 || (descriptionHits > 0 && hasCookingContext));
+      // 입력한 모든 단어가 제목 또는 설명에 포함되어야 합니다. 공백은 제거해 띄어쓰기 차이는 허용합니다.
+      const allTermsIncluded = terms.length > 0 && terms.every(term => title.includes(term) || description.includes(term));
+      const relevant = !looksLikeNonRecipe && allTermsIncluded;
       const score = (exactTitleMatch ? 100 : 0) + titleHits * 20 + descriptionHits * 3 + (hasCookingContext ? 15 : 0) + (channel.includes(normalizedQuery) ? 5 : 0);
       return {video,relevant,score};
     }).filter(item => item.relevant).sort((a,b) => b.score-a.score).map(item => item.video);
   };
 
   let videos = [];
-  // 원문 검색 결과를 우선 사용하고, 결과가 부족하면 음식명 중심의 검색어를 순차적으로 추가합니다.
+  // 입력 검색어 전체를 유지한 검색만 수행하고, 띄어쓰기 차이만 정규화해 판별합니다.
   for (const query of searchQueries) {
     await fetchSearchResults(query);
     videos = rankCandidates();
     if (videos.length >= 5) break;
-  }
-  // 입력어가 브랜드·인물명과 음식명으로 구성된 경우, 음식명 단독 결과도 관련 후보로 인정합니다.
-  if (!videos.length) {
-    const relaxedTerms = foodTerms.length ? foodTerms : rawTerms;
-    videos = [...found.values()].filter(video => {
-      const title = normalize(video.title), description = normalize(video.description);
-      const excluded = ["먹방","시식","맛집탐방","식당리뷰","방문후기"].some(term => title.includes(normalize(term)));
-      return !excluded && relaxedTerms.some(term => title.includes(term) || description.includes(term));
-    });
   }
   if (!videos.length) throw new Error("입력한 음식명과 관련된 조리 영상을 찾지 못했습니다. 음식명만 입력하거나 '음식명 만드는 법'처럼 검색어를 바꾸어 다시 시도해 주세요.");
 
