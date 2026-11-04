@@ -113,7 +113,7 @@ async function searchVideos(food, apiKey) {
   };
 
   const rankCandidates = () => {
-    const cookingSignals = ["레시피","만드는법","만들기","요리법","조리법","요리","조리","황금레시피","간단요리","집밥","양념","볶음","찜닭","조림","계란밥"];
+    const cookingSignals = ["레시피","만드는법","요리법","조리법","조리","황금레시피","간단요리","집밥","양념","볶음","찜닭","조림","계란밥"];
     const excludeSignals = ["먹방","시식","맛집탐방","식당리뷰","방문후기"];
     return [...found.values()].map(video => {
       const title = normalize(video.title);
