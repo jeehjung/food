@@ -131,12 +131,12 @@ async function searchVideos(food, apiKey) {
       const exactTitleMatch = !!normalizedQuery && title.includes(normalizedQuery);
       const hasCookingContext = cookingSignals.some(term => title.includes(normalize(term)) || description.includes(normalize(term)));
       const looksLikeNonRecipe = excludeSignals.some(term => title.includes(normalize(term))) && !hasCookingContext;
-      // 입력한 모든 단어가 제목·설명 또는 해시태그에 포함되면 통과합니다.
-      // 해시태그는 # 기호를 제외하고 비교하며 띄어쓰기 차이는 정규화합니다.
+      // 입력한 모든 단어가 제목·설명 또는 해시태그에 포함되어야 합니다.
+      // 단, 조리 영상 판정은 제목 또는 설명의 조리 문구로만 수행하며 해시태그는 판정에 사용하지 않습니다.
       const allTermsIncluded = terms.length > 0 && terms.every(term =>
         title.includes(term) || description.includes(term) || hashtagText.includes(term)
       );
-      const relevant = !looksLikeNonRecipe && allTermsIncluded;
+      const relevant = !looksLikeNonRecipe && allTermsIncluded && hasCookingContext;
       const score = (exactTitleMatch ? 100 : 0) + titleHits * 20 + descriptionHits * 3 + hashtagHits * 12 + (hasCookingContext ? 15 : 0) + (channel.includes(normalizedQuery) ? 5 : 0);
       return {video,relevant,score};
     }).filter(item => item.relevant).sort((a,b) => b.score-a.score).map(item => item.video);
