@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   id TEXT PRIMARY KEY,
   food TEXT NOT NULL,
   style TEXT NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'completed', 'failed')),
+  status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'completed', 'failed', 'cancelled')),
   request_ip TEXT NOT NULL,
   result_json TEXT,
   error_message TEXT,
