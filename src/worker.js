@@ -16,7 +16,7 @@ function json(data, status = 200, origin = "") {
 }
 function corsOrigin(request, env) {
   const origin = request.headers.get("Origin") || "";
-  const allowed = String(env.ALLOWED_ORIGINS || "https://jungjeehyun.github.io").split(",").map(x => x.trim()).filter(Boolean);
+  const allowed = String(env.ALLOWED_ORIGINS || "https://recipe-2vx.pages.dev").split(",").map(x => x.trim()).filter(Boolean);
   const matches = allowed.some(rule => {
     if (rule === origin) return true;
     if (rule.startsWith("https://*.") && origin.startsWith("https://")) {
