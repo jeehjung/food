@@ -34,7 +34,7 @@ npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put YOUTUBE_API_KEY
 ```
 
-API 키를 소스 코드나 GitHub 저장소에 넣지 마세요. 필요하면 wrangler.toml의 ALLOWED_ORIGINS에 프런트엔드 도메인을 추가합니다. 기본값은 https://jeehjung.github.io 입니다.
+API 키를 소스 코드나 GitHub 저장소에 넣지 마세요. 필요하면 wrangler.toml의 ALLOWED_ORIGINS에 프런트엔드 도메인을 추가합니다. 기본값은 https://jungjeehyun.github.io 입니다(운영 프런트엔드: https://jungjeehyun.github.io/recipe/).
 
 ## 4. Worker 배포
 
