@@ -37,7 +37,7 @@ ON jobs(status);
 
 5. 개발 Worker의 Secret을 별도로 등록한다. 운영 Secret을 공유하거나 운영 키를 문서/코드에 저장하지 않는다.
    - `npx wrangler secret put YOUTUBE_API_KEY --env development`
-6. 저장소 `JungJeehyun/recipe`를 Cloudflare Workers Builds에 연결해 빌드 브랜치를 `develop`으로 지정하고 Worker 이름이 `food-recipe-api-dev`인지 확인한다. 또는 로컬 Wrangler 로그인 환경에서 `npx wrangler deploy --config wrangler.dev.toml`로 배포한다.
+6. Worker 배포는 저장소 `jeehjung/food`의 GitHub Actions(`.github/workflows/deploy-workers.yml`)가 담당한다. `develop` push → `food-recipe-api-dev`, `main` push → `food-recipe-api`. 저장소 Secret `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 필요하다. 로컬에서는 `npx wrangler deploy --config wrangler.dev.toml`로도 배포할 수 있다.
 7. 프런트엔드는 GitHub Actions(`.github/workflows/deploy-pages.yml`)가 Cloudflare Pages에 직접 업로드한다. `main` → `recipe`, `develop` → `recipe-dev`. API 토큰에 Cloudflare Pages Edit 권한이 필요하다.
 8. `index.html`은 접속 도메인으로 개발/운영을 자동 판별한다. `recipe-dev.pages.dev`(및 프리뷰 하위 도메인)·localhost에서는 개발 Worker와 `develop` 브랜치를, 그 외에는 운영 Worker와 `main` 브랜치를 사용한다. 각 Worker의 `ALLOWED_ORIGINS`는 해당 Pages 도메인과 일치시킨다.
 
