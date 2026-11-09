@@ -1,6 +1,6 @@
 # Food Recipe Worker 배포 안내
 
-이 저장소는 GitHub Pages 프런트엔드와 Cloudflare Worker + Queues + D1 백엔드로 구성됩니다. Queue 소비자는 브라우저와 독립적으로 레시피 작업을 수행합니다.
+이 저장소는 Cloudflare Pages 프런트엔드(운영 `recipe`, 개발 `recipe-dev`)와 Cloudflare Worker + Queues + D1 백엔드로 구성됩니다. Queue 소비자는 브라우저와 독립적으로 레시피 작업을 수행합니다.
 
 ## 1. 사전 준비
 
@@ -34,7 +34,7 @@ npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put YOUTUBE_API_KEY
 ```
 
-API 키를 소스 코드나 GitHub 저장소에 넣지 마세요. 필요하면 wrangler.toml의 ALLOWED_ORIGINS에 프런트엔드 도메인을 추가합니다. 기본값은 https://jeehjung.github.io 입니다.
+API 키를 소스 코드나 GitHub 저장소에 넣지 마세요. 필요하면 wrangler.toml의 ALLOWED_ORIGINS에 프런트엔드 도메인을 추가합니다. 운영 프런트엔드 주소는 https://recipe-2vx.pages.dev 입니다.
 
 ## 4. Worker 배포
 
@@ -44,11 +44,11 @@ npx wrangler deploy
 
 배포 성공 메시지에서 Worker URL을 확인합니다. 보통 https://food-recipe-api.<Cloudflare 계정 서브도메인>.workers.dev 형태입니다.
 
-## 5. GitHub Pages 연결
+## 5. 프런트엔드 연결 (Cloudflare Pages)
 
-웹앱에서 상단의 API 설정 버튼을 열고 서버 API 주소에 Worker URL을 입력합니다(끝의 슬래시 제외). 저장 후 서버 연결 확인이 성공하면 사용할 수 있습니다.
+`index.html`이 접속 도메인으로 Worker 주소를 자동 선택합니다(운영 `recipe-2vx.pages.dev` → `food-recipe-api`, 개발 `recipe-dev.pages.dev` → `food-recipe-api-dev`). 별도 주소 입력은 필요 없습니다.
 
-서버 API 주소만 브라우저 localStorage에 저장됩니다. Gemini/YouTube API 키는 Worker Secret으로 관리합니다. 기존 브라우저에 남아 있는 이전 API 키는 프런트엔드가 초기화 시 제거합니다.
+Gemini API 키는 웹앱의 API 설정에서 입력하며 이 브라우저의 localStorage에 저장됩니다. YouTube API 키는 Worker Secret으로 관리합니다.
 
 ## 6. 동작 확인
 
