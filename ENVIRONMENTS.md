@@ -2,8 +2,8 @@
 
 ## 현재 구성
 
-- 운영: `main` 브랜치 + GitHub Pages 운영 주소(`https://jungjeehyun.github.io/recipe/`) + Cloudflare Worker `food-recipe-api` + D1 `food-recipe-jobs`
-- 개발: `develop` 브랜치 + 별도 Cloudflare Pages 프로젝트(`food-dev`) + Worker `food-recipe-api-dev` + D1 `food-recipe-jobs-dev`
+- 운영: `main` 브랜치 + Cloudflare Pages `recipe`(`https://recipe-2vx.pages.dev`) + Cloudflare Worker `food-recipe-api` + D1 `food-recipe-jobs`
+- 개발: `develop` 브랜치 + Cloudflare Pages `recipe-dev`(`https://recipe-dev.pages.dev`) + Worker `food-recipe-api-dev` + D1 `food-recipe-jobs-dev`
 - 개발 환경의 Queue 이름은 운영과 겹치지 않도록 `food-recipe-jobs-dev`, DLQ는 `food-recipe-dead-letter-dev`로 분리한다.
 
 ## 개발 환경 최초 1회 설정
@@ -38,8 +38,8 @@ ON jobs(status);
 5. 개발 Worker의 Secret을 별도로 등록한다. 운영 Secret을 공유하거나 운영 키를 문서/코드에 저장하지 않는다.
    - `npx wrangler secret put YOUTUBE_API_KEY --env development`
 6. 저장소 `JungJeehyun/recipe`를 Cloudflare Workers Builds에 연결해 빌드 브랜치를 `develop`으로 지정하고 Worker 이름이 `food-recipe-api-dev`인지 확인한다. 또는 로컬 Wrangler 로그인 환경에서 `npx wrangler deploy --config wrangler.dev.toml`로 배포한다.
-7. Cloudflare Pages에 별도 프로젝트 `food-dev`를 만들고 동일 저장소의 Production branch를 `develop`으로 지정한다. 정적 HTML 프로젝트이므로 별도 빌드가 필요하지 않으며 출력 디렉터리는 저장소 루트로 설정한다.
-8. `index.html`은 접속 도메인으로 개발/운영을 자동 판별한다. `food-dev.pages.dev`(및 프리뷰 하위 도메인)·localhost에서는 개발 Worker와 `develop` 브랜치를, 그 외에는 운영 Worker와 `main` 브랜치를 사용한다. 개발 Worker의 `ALLOWED_ORIGINS`는 개발 Pages의 실제 도메인과 일치시킨다.
+7. 프런트엔드는 GitHub Actions(`.github/workflows/deploy-pages.yml`)가 Cloudflare Pages에 직접 업로드한다. `main` → `recipe`, `develop` → `recipe-dev`. API 토큰에 Cloudflare Pages Edit 권한이 필요하다.
+8. `index.html`은 접속 도메인으로 개발/운영을 자동 판별한다. `recipe-dev.pages.dev`(및 프리뷰 하위 도메인)·localhost에서는 개발 Worker와 `develop` 브랜치를, 그 외에는 운영 Worker와 `main` 브랜치를 사용한다. 각 Worker의 `ALLOWED_ORIGINS`는 해당 Pages 도메인과 일치시킨다.
 
 ## 일상적인 개발/배포 절차
 

@@ -86,7 +86,7 @@ restoreSelectedStyle();
 function setRecipeOptionsDisabled(disabled){const options=$('recipeOptions');if(options)options.disabled=!!disabled;}
 const GEMINI_KEY_STORAGE='iuns_recipe_gemini_api_key_v1';
 // 접속 도메인으로 개발/운영을 판별해 main·develop 브랜치의 index.html을 동일하게 유지합니다.
-const IS_DEV_SITE=(h=>h==='food-dev.pages.dev'||h.endsWith('.food-dev.pages.dev')||h==='localhost'||h==='127.0.0.1')(location.hostname);
+const IS_DEV_SITE=(h=>h==='recipe-dev.pages.dev'||h.endsWith('.recipe-dev.pages.dev')||h==='food-dev.pages.dev'||h.endsWith('.food-dev.pages.dev')||h==='localhost'||h==='127.0.0.1')(location.hostname);
 const DEFAULT_SERVER_URL=IS_DEV_SITE?'https://food-recipe-api-dev.jeeh.workers.dev':'https://food-recipe-api.jeeh.workers.dev';
 const SITE_BRANCH=IS_DEV_SITE?'develop':'main';
 const PENDING_JOB_STORAGE='iuns_recipe_pending_job_v1';

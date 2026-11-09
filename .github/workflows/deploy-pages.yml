@@ -1,0 +1,45 @@
+name: Deploy Cloudflare Pages
+
+# 프런트엔드(index.html)를 Cloudflare Pages에 직접 업로드합니다.
+# main → recipe (운영), develop → recipe-dev (개발)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "index.html"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Prepare static files
+        run: mkdir -p dist && cp index.html dist/
+
+      - name: Deploy to Cloudflare Pages
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then PROJECT=recipe; else PROJECT=recipe-dev; fi
+          npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

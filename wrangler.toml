@@ -4,7 +4,7 @@ compatibility_date = "2026-10-28"
 workers_dev = true
 
 [vars]
-ALLOWED_ORIGINS = "https://jungjeehyun.github.io,https://jeehjung.github.io"
+ALLOWED_ORIGINS = "https://recipe-2vx.pages.dev,https://jungjeehyun.github.io,https://jeehjung.github.io"
 
 [[d1_databases]]
 binding = "DB"
