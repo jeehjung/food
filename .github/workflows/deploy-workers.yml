@@ -59,19 +59,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Check Cloudflare token access
-        continue-on-error: true
-        run: |
-          echo "user token verify:"
-          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify | jq -c '{success,status:.result.status,errors}'
-          echo "account token verify:"
-          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify" | jq -c '{success,status:.result.status,errors}'
-          echo "account id length: ${#CLOUDFLARE_ACCOUNT_ID}"
-          npx wrangler whoami
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
       - name: Deploy development Worker
         run: npx wrangler deploy --config wrangler.dev.toml
         env:
