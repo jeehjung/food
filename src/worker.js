@@ -4,6 +4,8 @@ const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 const JOB_TIMEOUT_SECONDS = 120;
 // queued/running 상태로 이 시간 이상 갱신되지 않으면 멈춘 작업으로 보고 실패 처리합니다.
 const STALE_JOB_SECONDS = 10 * 60;
+// 최근 검색어는 최대 10개까지만 제공합니다.
+const RECENT_SEARCH_LIMIT = 10;
 const STALE_JOB_ERROR = "작업이 10분 넘게 진행되지 않아 실패 처리했습니다. 다시 요청해 주세요.";
 const JOB_TIMEOUT_ERROR = "Gemini API가 생성 요청 후 2분 안에 응답하지 않아 실패 처리했습니다. 브라우저 대기 시간이나 Worker 상태 조회 시간은 이 제한에 포함되지 않습니다.";
 
@@ -223,7 +225,7 @@ async function handleRequest(request,env) {
   if (request.method==="GET"&&url.pathname==="/api/recent") {
     // 모든 사용자의 최근 추출 성공 메뉴(중복 제거)와 메뉴별 가장 최근 레시피 결과. 보관 기간(JOB_TTL_SECONDS) 내 기록만 대상입니다.
     // SQLite는 MAX()와 함께 쓴 일반 컬럼에 최댓값 행의 값을 돌려주므로 result_json은 각 메뉴의 최신 결과입니다.
-    const limit=Math.max(1,Math.min(20,Number(url.searchParams.get("limit"))||10));
+    const limit=Math.max(1,Math.min(RECENT_SEARCH_LIMIT,Number(url.searchParams.get("limit"))||RECENT_SEARCH_LIMIT));
     const rows=await env.DB.prepare(
       "SELECT food, result_json, MAX(updated_at) AS last_at FROM jobs WHERE status='completed' AND result_json IS NOT NULL GROUP BY food ORDER BY last_at DESC LIMIT ?"
     ).bind(limit).all();

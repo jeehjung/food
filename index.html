@@ -415,9 +415,9 @@ async function loadRecentSearches(){
  const wrap=$('recentSearches'),list=$('recentList'),base=getStoredServerUrl();
  if(!wrap||!list||!base)return;
  try{
-  const response=await fetch(base+'/api/recent?limit=10',{cache:'no-store'});
+  const response=await fetch(base+'/api/recent',{cache:'no-store'});
   if(!response.ok)throw new Error('HTTP '+response.status);
-  const data=await response.json(),items=Array.isArray(data.items)?data.items:[];
+  const data=await response.json(),items=(Array.isArray(data.items)?data.items:[]).slice(0,10);
   list.replaceChildren(...items.filter(item=>item&&item.food).map(item=>{
    const chip=document.createElement('button');
    chip.type='button';chip.className='recent-chip';chip.textContent=item.food;chip.title=item.food+' 레시피 보기';
