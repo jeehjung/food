@@ -286,13 +286,15 @@ function showSavedRecipe(item){
  result.classList.add('show');setStatus('저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'})
 }
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-function renderCompletedRecipe(recipe){
+function renderCompletedRecipe(recipe,options={}){
+ const saveHistory=options.saveHistory!==false;
  const food=recipe.food||'레시피',style=recipe.style||'가장 인기 많은',answerText=recipe.text||'',sources=Array.isArray(recipe.sources)?recipe.sources:[];
  if(!answerText)throw new Error('서버가 레시피 결과를 반환하지 않았습니다.');
  const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 모델: gemini-3.5-flash-lite · LLM 응답 '+(recipe.elapsedSeconds??'-')+'초';
  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;currentVideoIndex=Math.max(0,Math.min(2,Number(recipe.videoIndex)||0));updateAgainButton();setSelectedStyle(style);setDisplayedServings(2);$('resultSub').textContent=style;$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=sources.map(v=>({title:v.title,url:v.url}));
  sources.forEach(v=>{const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=v.title+' · '+(v.channel||'YouTube');const span=document.createElement('span');span.textContent=(v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상')+' · 조회수 '+Number(v.views||0).toLocaleString('ko-KR')+'회';a.appendChild(span);sourceList.appendChild(a)});
+ if(!saveHistory){result.classList.add('show');setStatus(options.message||'저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'});return}
  const items=readHistory(),newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:style,servings:2,baseServings:2,videoIndex:currentVideoIndex,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+(recipe.model||'Gemini')+' 응답 시간 '+(recipe.elapsedSeconds??'-')+'초. 레시피를 브라우저 보관함에 저장했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function pollRecipeJob(id,food,style,button,requestToken){
@@ -401,6 +403,14 @@ async function loadLatestUpdate(){
   console.warn('Latest update 조회 실패:',error);
  }
 }
+// 최근 검색어 목록과 함께 받아 둔 레시피 결과를 클릭 즉시 표시합니다(새 생성·API 사용 없음, 보관함에도 저장하지 않음).
+function showRecentRecipe(item){
+ if($('stopBtn').classList.contains('show')){setStatus('레시피 생성 중에는 최근 검색어 레시피를 열 수 없어요. 완료 후 다시 눌러 주세요.');return}
+ if(!item||!item.result||!item.result.text){setStatus('이 메뉴의 저장된 레시피를 찾을 수 없어요.');return}
+ $('food').value=item.food;
+ try{renderCompletedRecipe({...item.result,food:item.result.food||item.food},{saveHistory:false,message:'최근 검색어 「'+item.food+'」의 저장된 레시피예요.'})}
+ catch(error){setStatus(error.message||'레시피를 표시하지 못했어요.')}
+}
 async function loadRecentSearches(){
  const wrap=$('recentSearches'),list=$('recentList'),base=getStoredServerUrl();
  if(!wrap||!list||!base)return;
@@ -410,8 +420,8 @@ async function loadRecentSearches(){
   const data=await response.json(),items=Array.isArray(data.items)?data.items:[];
   list.replaceChildren(...items.filter(item=>item&&item.food).map(item=>{
    const chip=document.createElement('button');
-   chip.type='button';chip.className='recent-chip';chip.textContent=item.food;chip.title=item.food+' 검색어 입력';
-   chip.addEventListener('click',()=>{const input=$('food');input.value=item.food;input.focus()});
+   chip.type='button';chip.className='recent-chip';chip.textContent=item.food;chip.title=item.food+' 레시피 보기';
+   chip.addEventListener('click',()=>showRecentRecipe(item));
    return chip;
   }));
   wrap.hidden=list.childElementCount===0;
