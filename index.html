@@ -4,6 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f6f4ef">
 <title>핫한 레시피 찾기</title>
 <style>
+.recent-searches{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 0;font-size:13px;color:var(--muted)}.recent-searches[hidden]{display:none}.recent-label{font-weight:600;white-space:nowrap}.recent-list{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.recent-chip{cursor:pointer;font:inherit;font-size:13px;line-height:1.4;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.recent-chip:hover,.recent-chip:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
 :root{--bg:#f6f4ef;--card:#fffefa;--ink:#24251f;--muted:#73756c;--line:#e5e2d8;--accent:#d85c36;--soft:#f3e2d8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;line-height:1.6}main{max-width:850px;margin:auto;padding:24px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:12px}.logo{font-weight:900;font-size:18px;letter-spacing:-.04em}.pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 10px;color:var(--muted)}.hero{padding:20px 0 24px}.eyebrow{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:.12em}.hero h1{font-size:clamp(32px,7vw,54px);line-height:1.12;letter-spacing:-.055em;margin:10px 0 14px}.hero p{color:var(--muted);max-width:600px}.panel,.result{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;margin:18px 0;box-shadow:0 8px 30px #30271908}label{display:block;font-size:14px;font-weight:750;margin:0 0 7px}.foodrow{display:flex;gap:8px}input,select{font:inherit;border:1px solid var(--line);border-radius:12px;background:white;padding:13px 12px;width:100%;min-width:0;color:var(--ink)}.foodrow input{flex:1}.job-actions{display:flex;gap:8px;align-items:stretch}.job-actions #searchBtn{flex:1}#stopBtn{display:none;background:#fee2e2;color:#991b1b;white-space:nowrap}#stopBtn.show{display:block}.job-actions #searchBtn{height:48px}button{font:inherit;font-weight:750;border:0;border-radius:12px;padding:12px 16px;cursor:pointer}.primary{background:var(--accent);color:white;white-space:nowrap}.secondary{background:var(--soft);color:#77371f}.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}button:disabled{opacity:.6}.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.hint{font-size:12px;color:var(--muted);margin:8px 0 0}.api{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.api summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:700}.api input{margin-top:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.keytop{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:99px;padding:7px 11px;color:var(--muted);cursor:pointer}.keytop.set{background:#edf8ed;border-color:#c9e7c9;color:#27632a}.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
 .history-open-btn{cursor:pointer;font-size:12px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;box-shadow:0 1px 2px #0f172a0d;padding:8px 14px;border-radius:999px;transition:background .15s,border-color .15s;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600;white-space:nowrap}.history-open-btn:hover{background:#fef3c7;border-color:#fcd34d}.history-open-btn:active{background:#fde68a}.history-open-icon{color:#d97706;font-size:14px;line-height:1}.modalback{display:none;position:fixed;inset:0;background:#17203399;backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center;padding:16px}.modalback.show{display:flex}.keymodal{background:#fffefa;border:1px solid var(--line);border-radius:22px;padding:24px;width:100%;max-width:430px;box-shadow:0 20px 60px #0002}.keymodal h2{font-size:20px;margin:0 0 8px}.keymodal p{font-size:13px;color:var(--muted);margin:0 0 16px}.keymodal a{color:#5145cd;font-weight:700}.keymodal label{font-size:13px}.keymodal input{font-family:ui-monospace,monospace;-webkit-text-security:disc;margin-bottom:16px}.keymodal .actions button{flex:1}.actions button{font-size:13px}#status{display:none;padding:12px 14px;border-radius:12px;background:#f2eee4;color:#55564d;margin:14px 0;font-size:14px}#status.show{display:block}.result{display:none;padding:clamp(18px,4vw,30px)}.result.show{display:block}.result-serving{max-width:260px;margin:0 0 18px}.result-serving label{margin-bottom:6px}.result h2{font-size:25px;line-height:1.25;letter-spacing:-.035em;margin:0 0 8px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.answer{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.85}.answer{padding:2px 0}.answer #recipe-placeholder{display:none}.answer{tab-size:2}.answer{font-variant-numeric:tabular-nums}.sources{border-top:1px solid var(--line);padding-top:16px;margin-top:24px}.sources h3{font-size:15px;margin:0 0 10px}.source-list{display:grid;gap:8px}.source{display:block;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:13px}.source span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.empty{color:var(--muted);font-size:13px}footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px;display:flex;flex-direction:column;gap:4px}@media(max-width:520px){main{padding:18px 13px 38px}.top-actions{justify-content:flex-start}.panel{padding:16px}.foodrow{flex-direction:column}.foodrow button{width:100%}.options{grid-template-columns:1fr}.hero{padding-top:12px}.result{padding:18px}}
@@ -52,6 +53,7 @@
 <div class="top"><div class="top-actions"><button type="button" class="keytop" id="apiSettingsOpen">Gemini API 키 입력 필요</button><button type="button" class="history-open-btn" id="historyOpen"><span class="history-open-icon" aria-hidden="true">◷</span><span>저장된 레시피 보관함</span></button></div></div>
 
 <section class="panel"><form id="recipeForm"><label for="food">어떤 음식이 궁금하세요?</label><div class="foodrow"><input id="food" placeholder="예: 마라로제 떡볶이, 두바이 초콜릿" required maxlength="100"><div class="job-actions"><button class="primary" id="searchBtn" type="submit">레시피 찾기 ↗</button><button type="button" id="stopBtn">중지</button></div></div>
+<div class="recent-searches" id="recentSearches" hidden><span class="recent-label">최근 검색어 :</span><span class="recent-list" id="recentList"></span></div>
 <p class="hint">※ 서버에 작업이 등록된 후에는 브라우저를 닫아도 레시피 생성이 계속됩니다.</p>
 <div class="options"><fieldset class="recipe-style-fieldset" id="recipeOptions"><legend>레시피 옵션</legend><label class="recipe-radio"><input type="radio" name="style" value="아이들도 먹기 좋은" checked><span class="radio-mark"></span><span>아이들도 먹기 좋은</span></label><label class="recipe-radio"><input type="radio" name="style" value="가장 인기 많은"><span class="radio-mark"></span><span>가장 인기 많은</span></label></fieldset></div>
 
@@ -284,13 +286,15 @@ function showSavedRecipe(item){
  result.classList.add('show');setStatus('저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'})
 }
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-function renderCompletedRecipe(recipe){
+function renderCompletedRecipe(recipe,options={}){
+ const saveHistory=options.saveHistory!==false;
  const food=recipe.food||'레시피',style=recipe.style||'가장 인기 많은',answerText=recipe.text||'',sources=Array.isArray(recipe.sources)?recipe.sources:[];
  if(!answerText)throw new Error('서버가 레시피 결과를 반환하지 않았습니다.');
  const modelVersion=$('modelVersion');if(modelVersion)modelVersion.textContent='사용 Gemini 모델: gemini-3.5-flash-lite · LLM 응답 '+(recipe.elapsedSeconds??'-')+'초';
  $('resultTitle').textContent=food+' 레시피';currentBaseText=answerText;currentBaseServings=2;activeHistoryId=null;currentVideoIndex=Math.max(0,Math.min(2,Number(recipe.videoIndex)||0));updateAgainButton();setSelectedStyle(style);setDisplayedServings(2);$('resultSub').textContent=style;$('answer').innerHTML=scaleIngredientText(currentBaseText,currentBaseServings,2);
  const sourceList=$('sourceList');sourceList.replaceChildren();const savedSources=sources.map(v=>({title:v.title,url:v.url}));
  sources.forEach(v=>{const a=document.createElement('a');a.className='source';a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=v.title+' · '+(v.channel||'YouTube');const span=document.createElement('span');span.textContent=(v.publishedAt?v.publishedAt.slice(0,10):'게시일 미상')+' · 조회수 '+Number(v.views||0).toLocaleString('ko-KR')+'회';a.appendChild(span);sourceList.appendChild(a)});
+ if(!saveHistory){result.classList.add('show');setStatus(options.message||'저장된 레시피를 불러왔어요.');result.scrollIntoView({behavior:'smooth',block:'start'});return}
  const items=readHistory(),newId=Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeHistoryId=newId;items.unshift({id:newId,name:food+' 레시피',food,option:style,servings:2,baseServings:2,videoIndex:currentVideoIndex,text:answerText,sources:savedSources,favorite:false,createdAt:new Date().toISOString()});writeHistory(items);renderHistory();result.classList.add('show');setStatus('완료! '+(recipe.model||'Gemini')+' 응답 시간 '+(recipe.elapsedSeconds??'-')+'초. 레시피를 브라우저 보관함에 저장했어요.');result.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function pollRecipeJob(id,food,style,button,requestToken){
@@ -321,7 +325,7 @@ async function pollRecipeJob(id,food,style,button,requestToken){
   if(data.status!==lastStatus){lastStatus=data.status;if(data.status==='queued'||data.status==='running'){setStatus('',false);button.textContent='레시피 생성중';}}
   if(data.status==='completed'){
    if(activeJobId!==id||requestToken!==activeRequestToken)return;
-   localStorage.removeItem(PENDING_JOB_STORAGE);$('stopBtn').classList.remove('show');renderCompletedRecipe(data.result);return;
+   localStorage.removeItem(PENDING_JOB_STORAGE);$('stopBtn').classList.remove('show');renderCompletedRecipe(data.result);loadRecentSearches();return;
   }
   if(data.status==='failed'){localStorage.removeItem(PENDING_JOB_STORAGE);$('stopBtn').classList.remove('show');throw new Error(data.error||'레시피 생성에 실패했습니다.')}
   if(data.status==='cancelled'){localStorage.removeItem(PENDING_JOB_STORAGE);$('stopBtn').classList.remove('show');if(cancelRequested)return;throw new Error(data.error||'레시피 생성 작업이 중지되었습니다.')}
@@ -399,6 +403,34 @@ async function loadLatestUpdate(){
   console.warn('Latest update 조회 실패:',error);
  }
 }
+// 최근 검색어 목록과 함께 받아 둔 레시피 결과를 클릭 즉시 표시합니다(새 생성·API 사용 없음, 보관함에도 저장하지 않음).
+function showRecentRecipe(item){
+ if($('stopBtn').classList.contains('show')){setStatus('레시피 생성 중에는 최근 검색어 레시피를 열 수 없어요. 완료 후 다시 눌러 주세요.');return}
+ if(!item||!item.result||!item.result.text){setStatus('이 메뉴의 저장된 레시피를 찾을 수 없어요.');return}
+ $('food').value=item.food;
+ try{renderCompletedRecipe({...item.result,food:item.result.food||item.food},{saveHistory:false,message:'최근 검색어 「'+item.food+'」의 저장된 레시피예요.'})}
+ catch(error){setStatus(error.message||'레시피를 표시하지 못했어요.')}
+}
+async function loadRecentSearches(){
+ const wrap=$('recentSearches'),list=$('recentList'),base=getStoredServerUrl();
+ if(!wrap||!list||!base)return;
+ try{
+  const response=await fetch(base+'/api/recent',{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json(),items=(Array.isArray(data.items)?data.items:[]).slice(0,10);
+  list.replaceChildren(...items.filter(item=>item&&item.food).map(item=>{
+   const chip=document.createElement('button');
+   chip.type='button';chip.className='recent-chip';chip.textContent=item.food;chip.title=item.food+' 레시피 보기';
+   chip.addEventListener('click',()=>showRecentRecipe(item));
+   return chip;
+  }));
+  wrap.hidden=list.childElementCount===0;
+ }catch(error){
+  wrap.hidden=true;
+  console.warn('최근 검색어 조회 실패:',error);
+ }
+}
 loadLatestUpdate();
+loadRecentSearches();
 updateApiKeyUI();
 setTimeout(()=>{resumePendingRecipeJob()},0);</script></body></html>
