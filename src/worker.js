@@ -220,6 +220,14 @@ async function handleRequest(request,env) {
     const service=url.hostname.startsWith("food-recipe-api-dev.")?"food-recipe-api-dev":"food-recipe-api";
     return json({ok:true,service},200,origin);
   }
+  if (request.method==="GET"&&url.pathname==="/api/recent") {
+    // 모든 사용자의 최근 추출 성공 메뉴(음식명만, 중복 제거). 보관 기간(JOB_TTL_SECONDS) 내 기록만 대상입니다.
+    const limit=Math.max(1,Math.min(20,Number(url.searchParams.get("limit"))||10));
+    const rows=await env.DB.prepare(
+      "SELECT food, MAX(updated_at) AS last_at FROM jobs WHERE status='completed' GROUP BY food ORDER BY last_at DESC LIMIT ?"
+    ).bind(limit).all();
+    return json({items:(rows.results||[]).map(r=>({food:r.food,completedAt:r.last_at}))},200,origin);
+  }
   if (request.method==="POST"&&url.pathname==="/api/jobs") {
     if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
     let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
