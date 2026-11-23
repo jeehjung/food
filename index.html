@@ -433,4 +433,45 @@ async function loadRecentSearches(){
 loadLatestUpdate();
 loadRecentSearches();
 updateApiKeyUI();
-setTimeout(()=>{resumePendingRecipeJob()},0);</script></body></html>
+setTimeout(()=>{resumePendingRecipeJob()},0);
+// 새 버전 배포 감지 → 자동 새로고침
+// 같은 주소의 index.html을 캐시 없이 받아 처음 받은 내용과 다르면 새 버전이 배포된 것으로 봅니다.
+// 진행 중인 레시피 작업은 새로고침 후 resumePendingRecipeJob()이 이어받습니다.
+// 검색어를 입력하는 중에는 미뤘다가 입력이 끝나거나 다른 탭에 다녀오면 새로고침합니다.
+(()=>{
+ const CHECK_INTERVAL_MS=60*1000;
+ let baselineHash=null,updateReady=false,checking=false;
+ async function pageHash(){
+  const response=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const text=await response.text();
+  if(!crypto?.subtle)return text.length+':'+text.slice(-200);
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+ }
+ function userIsTyping(){
+  const el=document.activeElement;
+  return !!el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')&&el.type!=='radio'&&el.type!=='checkbox'&&String(el.value||'').length>0;
+ }
+ const KEEP_FOOD_KEY='recipe_reload_food_v1';
+ try{const kept=sessionStorage.getItem(KEEP_FOOD_KEY);if(kept!==null){sessionStorage.removeItem(KEEP_FOOD_KEY);if(!$('food').value)$('food').value=kept}}catch(_){}
+ function reloadIfSafe(){
+  if(!updateReady||userIsTyping())return;
+  try{const value=$('food').value;if(value)sessionStorage.setItem(KEEP_FOOD_KEY,value)}catch(_){}
+  location.reload();
+ }
+ async function checkForUpdate(){
+  if(checking||updateReady||location.protocol==='file:')return;
+  checking=true;
+  try{
+   const hash=await pageHash();
+   if(baselineHash===null)baselineHash=hash;
+   else if(hash!==baselineHash){updateReady=true;setStatus('새 버전이 배포되어 화면을 새로고침합니다.');setTimeout(reloadIfSafe,1500)}
+  }catch(error){console.warn('새 버전 확인 실패:',error)}
+  finally{checking=false}
+ }
+ checkForUpdate();
+ setInterval(()=>{if(document.visibilityState==='visible')checkForUpdate();else reloadIfSafe()},CHECK_INTERVAL_MS);
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){reloadIfSafe();checkForUpdate()}});
+ document.addEventListener('focusout',()=>setTimeout(reloadIfSafe,300));
+})();</script></body></html>
