@@ -1,0 +1,16 @@
+{
+  "name": "핫한 레시피 찾기",
+  "short_name": "레시피",
+  "description": "유튜브 인기 영상을 바탕으로 레시피와 재료를 정리해 주는 웹앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#f6f4ef",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

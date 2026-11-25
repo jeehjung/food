@@ -1,6 +1,6 @@
 name: Deploy Cloudflare Pages
 
-# 프런트엔드(index.html)를 Cloudflare Pages에 직접 업로드합니다.
+# 프런트엔드(index.html, PWA manifest·서비스 워커·아이콘)를 Cloudflare Pages에 직접 업로드합니다.
 # main → recipe (운영), develop → recipe-dev (개발)
 
 on:
@@ -10,6 +10,9 @@ on:
       - develop
     paths:
       - "index.html"
+      - "manifest.webmanifest"
+      - "sw.js"
+      - "icons/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -34,7 +37,7 @@ jobs:
           node-version: 22
 
       - name: Prepare static files
-        run: mkdir -p dist && cp index.html dist/
+        run: mkdir -p dist && cp -r index.html manifest.webmanifest sw.js icons dist/
 
       - name: Deploy to Cloudflare Pages
         run: |
