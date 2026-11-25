@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f6f4ef">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f6f4ef"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="레시피"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>핫한 레시피 찾기</title>
 <style>
 .recent-searches{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 0;font-size:13px;color:var(--muted)}.recent-searches[hidden]{display:none}.recent-label{font-weight:600;white-space:nowrap}.recent-list{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.recent-chip{cursor:pointer;font:inherit;font-size:13px;line-height:1.4;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.recent-chip:hover,.recent-chip:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
@@ -469,6 +469,9 @@ setTimeout(()=>{resumePendingRecipeJob()},0);
    else if(hash!==baselineHash){updateReady=true;setStatus('새 버전이 배포되어 화면을 새로고침합니다.');setTimeout(reloadIfSafe,1500)}
   }catch(error){console.warn('새 버전 확인 실패:',error)}
   finally{checking=false}
+ }
+ if('serviceWorker' in navigator&&location.protocol!=='file:'){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(error=>console.warn('서비스 워커 등록 실패:',error))});
  }
  checkForUpdate();
  setInterval(()=>{if(document.visibilityState==='visible')checkForUpdate();else reloadIfSafe()},CHECK_INTERVAL_MS);
