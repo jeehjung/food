@@ -6,6 +6,10 @@ const JOB_TIMEOUT_SECONDS = 120;
 const STALE_JOB_SECONDS = 10 * 60;
 // 최근 검색어는 최대 10개까지만 제공합니다.
 const RECENT_SEARCH_LIMIT = 10;
+// 영상 선택 목록: 최대 개수, 같은 검색어 결과 재사용 시간(6시간)
+const VIDEO_LIST_LIMIT = 10;
+const VIDEO_CACHE_SECONDS = 6 * 60 * 60;
+const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 const STALE_JOB_ERROR = "작업이 10분 넘게 진행되지 않아 실패 처리했습니다. 다시 요청해 주세요.";
 const JOB_TIMEOUT_ERROR = "Gemini API가 생성 요청 후 2분 안에 응답하지 않아 실패 처리했습니다. 브라우저 대기 시간이나 Worker 상태 조회 시간은 이 제한에 포함되지 않습니다.";
 
@@ -111,7 +115,8 @@ async function searchVideos(food, apiKey) {
       found.set(item.id.videoId, {
         id:item.id.videoId,title:item.snippet?.title || "제목 없음",description:item.snippet?.description || "",
         channel:item.snippet?.channelTitle || "채널 정보 없음",publishedAt:item.snippet?.publishedAt || "",
-        url:"https://www.youtube.com/watch?v=" + item.id.videoId,views:0
+        url:"https://www.youtube.com/watch?v=" + item.id.videoId,views:0,
+        thumbnail:item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || ""
       });
     }
   };
@@ -166,6 +171,40 @@ async function searchVideos(food, apiKey) {
   } catch (_) {}
   return videos;
 }
+// 사용자가 고른 영상 1개의 정보(YouTube videos.list, 1 유닛).
+async function fetchVideoById(videoId, apiKey) {
+  const {response,data} = await fetchJsonBeforeDeadline("https://www.googleapis.com/youtube/v3/videos?" + new URLSearchParams({part:"snippet,statistics",id:videoId,key:apiKey}), {});
+  if (!response.ok) throw new Error(errorMessage("YouTube Data API", response.status, data));
+  const item = (data.items || [])[0];
+  if (!item) throw new Error("선택한 영상을 찾을 수 없습니다. 삭제되었거나 비공개일 수 있어요. 다른 영상을 골라 주세요.");
+  return {
+    id:item.id,title:item.snippet?.title || "제목 없음",description:item.snippet?.description || "",
+    channel:item.snippet?.channelTitle || "채널 정보 없음",publishedAt:item.snippet?.publishedAt || "",
+    url:"https://www.youtube.com/watch?v=" + item.id,views:Number(item.statistics?.viewCount || 0)
+  };
+}
+
+// 후보 영상 목록(우선순위순). 같은 검색어는 VIDEO_CACHE_SECONDS 동안 D1에 저장해 YouTube 검색(100 유닛)을 아낍니다.
+let videoCacheReady = false;
+async function ensureVideoCacheTable(db) {
+  if (videoCacheReady) return;
+  await db.prepare("CREATE TABLE IF NOT EXISTS video_search_cache (query TEXT PRIMARY KEY, videos_json TEXT NOT NULL, created_at INTEGER NOT NULL)").run();
+  videoCacheReady = true;
+}
+async function listCandidateVideos(food, env) {
+  const key = String(food || "").trim().toLocaleLowerCase("ko-KR").replace(/\s+/g, " ");
+  const now = Math.floor(Date.now() / 1000);
+  await ensureVideoCacheTable(env.DB);
+  const cached = await env.DB.prepare("SELECT videos_json, created_at FROM video_search_cache WHERE query=?").bind(key).first();
+  if (cached && now - Number(cached.created_at) < VIDEO_CACHE_SECONDS) {
+    try { return JSON.parse(cached.videos_json); } catch (_) {}
+  }
+  const videos = (await searchVideos(food, env.YOUTUBE_API_KEY)).slice(0, VIDEO_LIST_LIMIT)
+    .map(v => ({id:v.id,title:v.title,channel:v.channel,publishedAt:v.publishedAt,views:v.views,url:v.url,thumbnail:v.thumbnail}));
+  await env.DB.prepare("INSERT INTO video_search_cache (query, videos_json, created_at) VALUES (?,?,?) ON CONFLICT(query) DO UPDATE SET videos_json=excluded.videos_json, created_at=excluded.created_at")
+    .bind(key, JSON.stringify(videos), now).run();
+  return videos;
+}
 function buildPrompt(food, style, primary, references) {
   const context = "제목: "+primary.title+"\n채널: "+primary.channel+"\n게시일: "+(primary.publishedAt?primary.publishedAt.slice(0,10):"미상")+"\n조회수: "+primary.views+"\n설명: "+primary.description.slice(0,900)+"\nURL: "+primary.url;
   const refContext = references.map((v,i)=>"보조 영상 "+(i+1)+": "+v.title+"\n채널: "+v.channel+"\n조회수: "+v.views+"\n설명: "+v.description.slice(0,500)+"\nURL: "+v.url).join("\n\n");
@@ -183,10 +222,10 @@ async function callGemini(model, prompt, primary, apiKey, deadlineAt) {
     })
   }, deadlineAt);
 }
-async function generateRecipe(food, style, env, geminiApiKey, videoIndex = 0) {
-  const videos=await searchVideos(food,env.YOUTUBE_API_KEY);
+async function generateRecipe(food, style, env, geminiApiKey, videoIndex = 0, videoId = "") {
+  // 사용자가 목록에서 고른 영상이 있으면 그 영상을, 없으면(이전 방식) 검색 결과의 videoIndex번째 영상을 씁니다.
   const selectedIndex=Math.max(0,Math.min(49,Math.floor(Number(videoIndex)||0)));
-  const primary=videos[selectedIndex],references=[];
+  const primary=videoId?await fetchVideoById(videoId,env.YOUTUBE_API_KEY):(await searchVideos(food,env.YOUTUBE_API_KEY))[selectedIndex],references=[];
   if (!primary) throw new Error("검색 조건에 맞는 영상이 "+(selectedIndex+1)+"번째까지 없습니다. 다른 검색어로 시도해 주세요.");
   const prompt=buildPrompt(food,style,primary,references),started=Date.now();
   // Only Gemini generation has a 2-minute deadline. Queue wait, YouTube lookup, browser inactivity,
@@ -200,7 +239,7 @@ async function generateRecipe(food, style, env, geminiApiKey, videoIndex = 0) {
   const d=result.data,parts=Array.isArray(d?.steps)?d.steps.flatMap(s=>Array.isArray(s.content)?s.content:[]):[];
   const text=String(d?.output_text||parts.map(p=>p.text||"").join("\n")||(Array.isArray(d?.output)?d.output.flatMap(s=>s.content||[]).map(p=>p.text||"").join("\n"):"")).trim();
   if (!text) throw new Error("Gemini가 레시피 내용을 반환하지 않았습니다."+(d?.error?.message?" ("+String(d.error.message).slice(0,250)+")":""));
-  return {food,style,videoIndex:selectedIndex,text,sources:[primary].map(v=>({title:v.title,url:v.url,channel:v.channel,publishedAt:v.publishedAt,views:v.views})),model,videoProcessing:"agentic",elapsedSeconds:Number(((Date.now()-started)/1000).toFixed(1))};
+  return {food,style,videoIndex:selectedIndex,videoId:primary.id||"",text,sources:[primary].map(v=>({title:v.title,url:v.url,channel:v.channel,publishedAt:v.publishedAt,views:v.views})),model,videoProcessing:"agentic",elapsedSeconds:Number(((Date.now()-started)/1000).toFixed(1))};
 }
 async function updateJob(db,id,status,fields={}) {
   const now=Math.floor(Date.now()/1000);
@@ -236,6 +275,19 @@ async function handleRequest(request,env) {
     }
     return json({items},200,origin);
   }
+  if (request.method==="POST"&&url.pathname==="/api/videos") {
+    if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
+    let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
+    const food=String(body?.food||"").trim();
+    if (!food||food.length>MAX_FOOD_LENGTH) return json({error:"음식명은 1~"+MAX_FOOD_LENGTH+"자여야 합니다."},400,origin);
+    try {
+      const items=await listCandidateVideos(food,env);
+      return json({food,items},200,origin);
+    } catch (error) {
+      const message=String(error?.message||"영상 목록을 가져오지 못했습니다.");
+      return json({error:message},/찾지 못했습니다/.test(message)?404:502,origin);
+    }
+  }
   if (request.method==="POST"&&url.pathname==="/api/jobs") {
     if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
     let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
@@ -244,6 +296,7 @@ async function handleRequest(request,env) {
     const personalKey=String(body?.geminiApiKey||"").trim();
     if (!personalKey&&!env.GEMINI_API_KEY) return json({error:"기본 Gemini 키가 아직 설정되지 않았습니다. 오른쪽 위 '개인 키'에 본인 Gemini 키를 넣어 주세요."},503,origin);
     const food=String(body?.food||"").trim(),style=body?.style==="아이들도 먹기 좋은"?"아이들도 먹기 좋은":"가장 인기 많은",videoIndex=Math.max(0,Math.min(2,Number(body?.videoIndex)||0));
+    const videoId=VIDEO_ID_PATTERN.test(String(body?.videoId||""))?String(body.videoId):"";
     if (!food||food.length>MAX_FOOD_LENGTH) return json({error:"음식명은 1~"+MAX_FOOD_LENGTH+"자여야 합니다."},400,origin);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown",now=Math.floor(Date.now()/1000);
     const id=crypto.randomUUID();
@@ -255,7 +308,7 @@ async function handleRequest(request,env) {
     if (Number(admission.meta?.changes||0)!==1) {
       return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
     }
-    try {await env.RECIPE_QUEUE.send({id,food,style,videoIndex,...(personalKey?{geminiApiKey:personalKey}:{}),createdAt:now});}
+    try {await env.RECIPE_QUEUE.send({id,food,style,videoIndex,...(videoId?{videoId}:{}),...(personalKey?{geminiApiKey:personalKey}:{}),createdAt:now});}
     catch (_) {await updateJob(env.DB,id,"failed",{errorMessage:"Queue에 작업을 등록하지 못했습니다. Cloudflare Queue 설정을 확인하세요."});return json({error:"작업 대기열 등록 실패. 서버 Queue 설정을 확인하세요."},503,origin);}
     return json({id,status:"queued",food,createdAt:now},202,origin);
   }
@@ -293,7 +346,7 @@ export default {
           continue;
         }
         await updateJob(env.DB,job.id,"running");
-        const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY,job.videoIndex||0);
+        const result=await generateRecipe(job.food,job.style,env,job.geminiApiKey||env.GEMINI_API_KEY,job.videoIndex||0,job.videoId||"");
         const afterGeneration=await env.DB.prepare("SELECT status FROM jobs WHERE id=?").bind(job.id).first();
         if (!afterGeneration || afterGeneration.status==="cancelled") {
           message.ack();
@@ -323,5 +376,7 @@ export default {
     await env.DB.prepare("UPDATE jobs SET status='failed',updated_at=?,error_message=? WHERE status IN ('queued','running') AND updated_at<?")
       .bind(now,STALE_JOB_ERROR,now-STALE_JOB_SECONDS).run();
     await env.DB.prepare("DELETE FROM jobs WHERE created_at<?").bind(now-JOB_TTL_SECONDS).run();
+    await ensureVideoCacheTable(env.DB);
+    await env.DB.prepare("DELETE FROM video_search_cache WHERE created_at<?").bind(now-VIDEO_CACHE_SECONDS).run();
   }
 };
