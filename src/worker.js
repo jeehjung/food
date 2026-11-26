@@ -56,7 +56,7 @@ function errorMessage(service, status, body) {
     return service + " 요청 한도 또는 할당량을 초과했습니다. 해당 API 제공자의 사용량과 한도 설정을 확인해 주세요." +
       (detail ? " (상세: " + detail.slice(0, 250) + ")" : "");
   }
-  if (status === 401) return service + " API 키가 유효하지 않습니다. Cloudflare 서버 Secret을 확인해 주세요.";
+  if (status === 401) return service + " API 키가 유효하지 않습니다. 개인 키를 쓰는 경우 키를 다시 확인하고, 기본 키라면 Cloudflare 서버 Secret(GEMINI_API_KEY)을 확인해 주세요.";
   if (status === 403) {
     return service + " API 접근이 거부되었습니다. API 키 권한, API 활성화 및 키 제한을 확인해 주세요." +
       (detail ? " (상세: " + detail.slice(0, 250) + ")" : "");
@@ -239,8 +239,10 @@ async function handleRequest(request,env) {
   if (request.method==="POST"&&url.pathname==="/api/jobs") {
     if (!env.YOUTUBE_API_KEY) return json({error:"YOUTUBE_API_KEY 서버 Secret을 설정하세요."},503,origin);
     let body; try {body=await request.json();} catch (_) {return json({error:"요청 본문은 JSON이어야 합니다."},400,origin);}
-    const geminiApiKey=String(body?.geminiApiKey||env.GEMINI_API_KEY||"").trim();
-    if (!geminiApiKey) return json({error:"Gemini API 키를 브라우저 설정에 입력하세요."},400,origin);
+    // Gemini 키: 기본은 서버의 GEMINI_API_KEY(운영자 키)로 누구나 사용. 사용자가 '개인 키'를 넣었으면 그 키를 사용.
+    // 개인 키는 대기열 메시지로만 전달하고 DB에는 저장하지 않습니다. 기본 키는 대기열 메시지에 넣지 않습니다.
+    const personalKey=String(body?.geminiApiKey||"").trim();
+    if (!personalKey&&!env.GEMINI_API_KEY) return json({error:"기본 Gemini 키가 아직 설정되지 않았습니다. 오른쪽 위 '개인 키'에 본인 Gemini 키를 넣어 주세요."},503,origin);
     const food=String(body?.food||"").trim(),style=body?.style==="아이들도 먹기 좋은"?"아이들도 먹기 좋은":"가장 인기 많은",videoIndex=Math.max(0,Math.min(2,Number(body?.videoIndex)||0));
     if (!food||food.length>MAX_FOOD_LENGTH) return json({error:"음식명은 1~"+MAX_FOOD_LENGTH+"자여야 합니다."},400,origin);
     const ip=request.headers.get("CF-Connecting-IP")||"unknown",now=Math.floor(Date.now()/1000);
@@ -253,7 +255,7 @@ async function handleRequest(request,env) {
     if (Number(admission.meta?.changes||0)!==1) {
       return json({error:"이미 처리 중인 작업이 2개 있습니다. 완료 후 다시 시도하세요."},429,origin);
     }
-    try {await env.RECIPE_QUEUE.send({id,food,style,videoIndex,geminiApiKey,createdAt:now});}
+    try {await env.RECIPE_QUEUE.send({id,food,style,videoIndex,...(personalKey?{geminiApiKey:personalKey}:{}),createdAt:now});}
     catch (_) {await updateJob(env.DB,id,"failed",{errorMessage:"Queue에 작업을 등록하지 못했습니다. Cloudflare Queue 설정을 확인하세요."});return json({error:"작업 대기열 등록 실패. 서버 Queue 설정을 확인하세요."},503,origin);}
     return json({id,status:"queued",food,createdAt:now},202,origin);
   }
@@ -307,7 +309,10 @@ export default {
           message.retry({delaySeconds:30});
           continue;
         }
-        await updateJob(env.DB,job.id,"failed",{errorMessage:detail.slice(0,1000)});
+        // 기본 키 사용 중 Gemini 한도 초과면 개인 키 안내를 덧붙입니다.
+        const defaultKeyQuota=!job.geminiApiKey&&/^Gemini/.test(detail)&&/한도|할당량/.test(detail);
+        const finalMessage=defaultKeyQuota?"기본 Gemini 키의 사용 한도를 넘었습니다. 오른쪽 위 '개인 키'에 본인 Gemini 키를 넣으면 그 키로 바로 만들 수 있어요. ("+detail+")":detail;
+        await updateJob(env.DB,job.id,"failed",{errorMessage:finalMessage.slice(0,1000)});
       }
       message.ack();
     }
