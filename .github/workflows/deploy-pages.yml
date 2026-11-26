@@ -39,6 +39,15 @@ jobs:
       - name: Prepare static files
         run: mkdir -p dist && cp -r index.html manifest.webmanifest sw.js icons dist/
 
+      - name: Mark development app name
+        if: github.ref == 'refs/heads/develop'
+        # 개발 주소에 설치한 앱은 이름 뒤에 '개발'을 붙여 운영 앱과 구분합니다.
+        run: |
+          sed -i 's/"name": "핫한 레시피 찾기"/"name": "핫한 레시피 찾기 개발"/; s/"short_name": "레시피"/"short_name": "레시피 개발"/' dist/manifest.webmanifest
+          sed -i 's/apple-mobile-web-app-title" content="레시피"/apple-mobile-web-app-title" content="레시피 개발"/' dist/index.html
+          grep -q '"short_name": "레시피 개발"' dist/manifest.webmanifest
+          grep -q 'content="레시피 개발"' dist/index.html
+
       - name: Deploy to Cloudflare Pages
         run: |
           if [ "$GITHUB_REF_NAME" = "main" ]; then PROJECT=recipe; else PROJECT=recipe-dev; fi
