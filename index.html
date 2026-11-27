@@ -585,4 +585,6 @@ setTimeout(()=>{resumePendingRecipeJob()},0);
  setInterval(()=>{if(document.visibilityState==='visible')checkForUpdate();else reloadIfSafe()},CHECK_INTERVAL_MS);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){reloadIfSafe();checkForUpdate()}});
  document.addEventListener('focusout',()=>setTimeout(reloadIfSafe,300));
-})();</script></body></html>
+})();</script><!-- 내 앱 현황 방문 기록: 하루 한 번만 보냄, 실패해도 앱에 영향 없음 -->
+<script>(function(a){try{var h=location.hostname;if(location.protocol!=='https:'||/^(localhost|127\.)/.test(h))return;var d=/-dev\./.test(h),k='adVisit',t=new Date(Date.now()+324e5).toISOString().slice(0,10);try{if(localStorage.getItem(k)===t)return;localStorage.setItem(k,t)}catch(_){}var u=(d?'https://app-dashboard-dev.pages.dev':'https://app-dashboard-1c4.pages.dev')+'/api/v',b=JSON.stringify({a:a,e:d?'dev':'prod'});if(navigator.sendBeacon)navigator.sendBeacon(u,b);else fetch(u,{method:'POST',body:b,keepalive:true,mode:'no-cors'})}catch(e){}})('recipe');</script>
+</body></html>
