@@ -4,12 +4,19 @@ compatibility_date = "2026-10-28"
 workers_dev = true
 
 [vars]
+USAGE_ENV = "dev"
 ALLOWED_ORIGINS = "https://recipe-dev.pages.dev,https://*.recipe-dev.pages.dev,https://food-dev.pages.dev,https://*.food-dev.pages.dev"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "food-recipe-jobs-dev"
 database_id = "ad114d90-ebca-458d-a755-78a878b0030b"
+
+# 내 앱 현황 대시보드용 Gemini 사용량 기록 (공용 D1)
+[[d1_databases]]
+binding = "USAGE_DB"
+database_name = "app-usage"
+database_id = "f6c721ec-6046-42fc-98e6-8623ec7a1a8d"
 
 [[queues.producers]]
 binding = "RECIPE_QUEUE"

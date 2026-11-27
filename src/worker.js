@@ -1,3 +1,4 @@
+import { logGemini } from "./usage.js";
 const ALLOWED_METHODS = "GET,POST,OPTIONS";
 const MAX_FOOD_LENGTH = 100;
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -232,7 +233,10 @@ async function generateRecipe(food, style, env, geminiApiKey, videoIndex = 0, vi
   // and /api/jobs polling do not consume this timeout.
   const deadlineAt=Date.now()+JOB_TIMEOUT_SECONDS*1000;
   const model="gemini-3.5-flash-lite";
-  const result=await callGemini(model,prompt,primary,geminiApiKey,deadlineAt);
+  let result;
+  try { result=await callGemini(model,prompt,primary,geminiApiKey,deadlineAt); }
+  catch (e) { await logGemini(env,"recipe",504,geminiApiKey!==env.GEMINI_API_KEY); throw e; }
+  await logGemini(env,"recipe",result.response.status,geminiApiKey!==env.GEMINI_API_KEY);
   if (!result.response.ok) {
     throw new Error(errorMessage("Gemini Flash-Lite",result.response.status,result.data));
   }

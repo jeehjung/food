@@ -11,6 +11,12 @@ binding = "DB"
 database_name = "food-recipe-jobs"
 database_id = "7f192050-d082-434f-b087-9dd6b92b2f07"
 
+# 내 앱 현황 대시보드용 Gemini 사용량 기록 (공용 D1)
+[[d1_databases]]
+binding = "USAGE_DB"
+database_name = "app-usage"
+database_id = "f6c721ec-6046-42fc-98e6-8623ec7a1a8d"
+
 [[queues.producers]]
 binding = "RECIPE_QUEUE"
 queue = "food-recipe-jobs"
